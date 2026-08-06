@@ -15,27 +15,45 @@ export default function Navbar() {
   const { data, isAdmin } = useAcademy();
 
   return (
-    <header className="navbar">
-      <div className="container navbar-inner">
-        <Link to="/" className="navbar-brand">
-          <span className="navbar-mark" aria-hidden="true">◆</span>
-          {data.site.name}
+    <header className="sharepoint-navbar">
+      {/* Top Header Bar */}
+      <div className="container navbar-top-bar">
+        <Link to="/" className="navbar-brand-group">
+          <div className="navbar-logo-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
+            </svg>
+          </div>
+          <span className="navbar-brand-title">{data.site.name || 'SharePoint Academy'}</span>
+          <span className="navbar-dept-tag">IT DEPARTMENT</span>
         </Link>
-        <nav className="navbar-links">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end={l.end}
-              className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
-            >
-              {l.label}
-            </NavLink>
-          ))}
-        </nav>
-        <Link to={isAdmin ? '/admin' : '/admin/login'} className="navbar-admin">
-          {isAdmin ? 'Admin panel' : 'Admin'}
-        </Link>
+
+        <div className="navbar-actions-right">
+          <Link to="/paths" className="navbar-cert-link">
+            <span className="cert-icon">🎓</span> IT Certification Program
+          </Link>
+          <Link to={isAdmin ? '/admin' : '/admin/login'} className="btn-student-portal">
+            {isAdmin ? 'Admin Portal' : 'Student Portal'}
+          </Link>
+        </div>
+      </div>
+
+      {/* Sub Navigation Links Bar */}
+      <div className="navbar-sub-bar">
+        <div className="container navbar-sub-inner">
+          <nav className="navbar-links">
+            {links.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.end}
+                className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
+              >
+                {l.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
       </div>
     </header>
   );
