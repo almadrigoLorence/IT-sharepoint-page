@@ -1,0 +1,158 @@
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--accent-tint) 0%, #ffffff 65%);
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(11, 110, 79, 0.16) 1.4px, transparent 1.4px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(180deg, black, transparent 80%);
+  animation: drift 30s linear infinite;
+}
+
+@keyframes drift {
+  from { background-position: 0 0; }
+  to { background-position: 260px 130px; }
+}
+
+.hero-inner {
+  position: relative;
+  padding: 84px 0 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+}
+
+.hero-title {
+  font-size: 46px;
+  line-height: 1.08;
+  animation: fade-up 0.5s ease both;
+}
+
+.hero-subtitle {
+  font-size: 17px;
+  color: var(--text-secondary);
+  animation: fade-up 0.5s ease 0.08s both;
+  max-width: 560px;
+}
+
+.hero-search {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  animation: fade-up 0.5s ease 0.16s both;
+}
+
+.hero-search input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  font-size: 14.5px;
+  background: #fff;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.hero-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-tint);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.section-head h2 { font-size: 21px; }
+
+.section-link {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent-dark);
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+.section-link:hover { transform: translateX(3px); }
+
+.quick-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+}
+
+.quick-link-label { font-weight: 700; font-size: 15px; }
+.quick-link-desc { font-size: 13px; color: var(--text-secondary); }
+.quick-link-arrow {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.quick-link:hover .quick-link-arrow { opacity: 1; transform: translateX(0); }
+
+.home-columns {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 48px;
+}
+
+@media (max-width: 860px) {
+  .home-columns { grid-template-columns: 1fr; }
+  .hero-title { font-size: 34px; }
+}
+
+.stack { display: flex; flex-direction: column; gap: 10px; }
+
+.news-list, .event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+
+.news-item { display: flex; gap: 12px; align-items: flex-start; }
+.news-item h3 { font-size: 14.5px; margin-bottom: 4px; }
+.news-item p { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 4px; }
+.news-item time { font-size: 12px; color: var(--text-faint); font-family: var(--font-mono); }
+
+.event-item { display: flex; gap: 14px; align-items: center; padding: 12px 16px; }
+.event-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--accent-tint);
+  border-radius: var(--radius-sm);
+  color: var(--accent-dark);
+  flex-shrink: 0;
+}
+.event-date span { font-size: 10px; text-transform: uppercase; font-family: var(--font-mono); }
+.event-date strong { font-size: 17px; }
+.event-item h4 { font-size: 14.5px; margin-bottom: 2px; }
+.event-item p { font-size: 13px; color: var(--text-secondary); }
+
+.featured-course {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 32px;
+  background: linear-gradient(120deg, var(--accent-tint), #fff 70%);
+}
+
+.featured-course h2 { font-size: 24px; margin: 8px 0 6px; }
+.featured-course p { color: var(--text-secondary); max-width: 460px; }
+.featured-meta { display: flex; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--text-secondary); font-family: var(--font-mono); }
+
+@media (max-width: 700px) {
+  .featured-course { flex-direction: column; align-items: flex-start; }
+}
