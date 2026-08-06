@@ -1,15 +1,18 @@
 .site-footer {
-  border-top: 1px solid var(--border);
-  padding: 28px 0;
-  margin-top: 40px;
+  border-top: 1px solid #e2e8f0;
+  padding: 32px 0;
+  margin-top: 60px;
+  background: #f8fafc;
 }
 
 .footer-inner {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--text-faint);
+  justify-content: center;
+  gap: 12px;
+  font-size: 13.5px;
+  color: #64748b;
+  font-weight: 500;
 }
 
-.footer-dot { opacity: 0.6; }
+.footer-dot { opacity: 0.5; }
