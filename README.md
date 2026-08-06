@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ASEPH Academy — Learning Hub
 
 A React web app built from the "Building a Learning Academy on SharePoint" design
@@ -81,3 +82,7 @@ Inter for body text, and IBM Plex Mono for labels/metadata. Buttons and
 loading states use CSS transitions and keyframe animations (hover lift,
 press feedback, skeleton loaders, staggered fade-ins). Reduced-motion is
 respected for accessibility.
+=======
+# IT-sharepoint-page
+Sharepoint page using React and web structure
+>>>>>>> 936165e9ee1b5991abfa55aebc8c6a0a115bfa5f
