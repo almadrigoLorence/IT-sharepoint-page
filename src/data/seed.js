@@ -3,11 +3,13 @@
 
 export const seedData = {
   site: {
-    name: 'ASEPH Academy',
-    tagline: 'Grow with ASEPH Academy',
+    name: 'SharePoint Academy',
+    tagline: 'Core Training Tracks',
     heroSubtitle:
-      'A training hub for reliability, calibration, and lab skills — browse courses, follow a role-based path, and track your progress.',
-    footerNote: 'ASEPH Learning Academy · an internal training hub',
+      'Welcome to the SharePoint Academy, hosted by the IT Department. Elevate your collaboration, design stunning intranets, and manage files securely.',
+    footerNote: 'SharePoint Academy · IT Department',
+    deptTag: 'IT DEPARTMENT',
+    logoUrl: '',
   },
 
   team: {
@@ -22,18 +24,22 @@ export const seedData = {
   },
 
   theme: {
-    primaryColor: '#0078d4',
-    secondaryColor: '#107c41',
-    bgColor: '#0b0f19',
-    cardBg: '#161e2e',
-    textColor: '#f3f4f6',
-    headerTitle: 'ASEPH Academy',
+    primaryColor: '#3b82f6',
+    secondaryColor: '#8b5cf6',
+    bgColor: '#f8fafc',
+    cardBg: '#ffffff',
+    textColor: '#0f172a',
+    headerTitle: 'SharePoint Academy',
+    bgMediaType: 'gradient',
+    bgMediaUrl: '',
     carousel: [
       { id: 'slide1', title: 'SharePoint & IT Training Hub', subtitle: 'Accelerate your technical mastery in security, reliability, and enterprise tools.', image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&auto=format&fit=crop&q=80', buttonText: 'Explore Courses', buttonUrl: '/catalog' },
       { id: 'slide2', title: 'Interactive Learning Paths', subtitle: 'Structured step-by-step career development tracks for engineers and technicians.', image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80', buttonText: 'View Paths', buttonUrl: '/paths' }
     ],
-    layout: ['carousel', 'quickLinks', 'news', 'team', 'courses', 'resources', 'events', 'progress']
+    layout: ['hero', 'quickLinks', 'news', 'team', 'courses', 'resources', 'events', 'progress']
   },
+
+  customContainers: [],
 
   quickLinks: [
     { id: 'ql1', label: 'New Hire?', to: '/paths', description: 'Start the onboarding path' },

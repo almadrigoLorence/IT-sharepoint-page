@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { seedData } from '../data/seed.js';
 
-const STORAGE_KEY = 'aseph-academy-data-v1';
-const AUTH_KEY = 'aseph-academy-admin-auth';
+const STORAGE_KEY = 'ita-sharepoint-data-v2';
+const AUTH_KEY = 'ita-sharepoint-admin-auth';
 const ADMIN_PASSWORD = 'academy-admin';
 const API_URL = 'http://localhost:5000/api';
 

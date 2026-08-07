@@ -14,15 +14,20 @@ const THEME_PRESETS = [
 ];
 
 export default function AdminTheme() {
-  const { data, updateTheme } = useAcademy();
+  const { data, updateTheme, updateSite } = useAcademy();
   const theme = data.theme || {};
+  const site = data.site || {};
 
-  const [primaryColor, setPrimaryColor] = useState(theme.primaryColor || '#0078d4');
-  const [secondaryColor, setSecondaryColor] = useState(theme.secondaryColor || '#107c41');
-  const [bgColor, setBgColor] = useState(theme.bgColor || '#0b0f19');
-  const [cardBg, setCardBg] = useState(theme.cardBg || '#161e2e');
-  const [textColor, setTextColor] = useState(theme.textColor || '#f3f4f6');
-  const [headerTitle, setHeaderTitle] = useState(theme.headerTitle || 'ASEPH Academy');
+  const [primaryColor, setPrimaryColor] = useState(theme.primaryColor || '#3b82f6');
+  const [secondaryColor, setSecondaryColor] = useState(theme.secondaryColor || '#8b5cf6');
+  const [bgColor, setBgColor] = useState(theme.bgColor || '#f8fafc');
+  const [cardBg, setCardBg] = useState(theme.cardBg || '#ffffff');
+  const [textColor, setTextColor] = useState(theme.textColor || '#0f172a');
+  const [headerTitle, setHeaderTitle] = useState(theme.headerTitle || 'SharePoint Academy');
+  const [bgMediaType, setBgMediaType] = useState(theme.bgMediaType || 'gradient');
+  const [bgMediaUrl, setBgMediaUrl] = useState(theme.bgMediaUrl || '');
+  const [deptTag, setDeptTag] = useState(site.deptTag || 'IT DEPARTMENT');
+  const [logoUrl, setLogoUrl] = useState(site.logoUrl || '');
   const [carousel, setCarousel] = useState(theme.carousel || []);
   const [savedNotice, setSavedNotice] = useState(false);
 
@@ -43,7 +48,13 @@ export default function AdminTheme() {
       cardBg,
       textColor,
       headerTitle,
+      bgMediaType,
+      bgMediaUrl,
       carousel,
+    });
+    updateSite({
+      deptTag,
+      logoUrl,
     });
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 3000);
@@ -165,18 +176,81 @@ export default function AdminTheme() {
         </div>
       </div>
 
-      {/* Header Branding */}
+      {/* Department Branding & Logo */}
       <div className="admin-panel mb-6">
-        <h2>Header Branding</h2>
-        <label>
-          Header Title / Academy Name
-          <input
-            type="text"
-            value={headerTitle}
-            onChange={(e) => setHeaderTitle(e.target.value)}
-            placeholder="e.g. ASEPH Academy"
-          />
-        </label>
+        <h2>Department Branding &amp; Logo (Multi-Department Reuse)</h2>
+        <div className="admin-form-grid">
+          <label>
+            Header Title / Academy Name
+            <input
+              type="text"
+              value={headerTitle}
+              onChange={(e) => setHeaderTitle(e.target.value)}
+              placeholder="e.g. SharePoint Academy"
+            />
+          </label>
+
+          <label>
+            Department Badge Label
+            <input
+              type="text"
+              value={deptTag}
+              onChange={(e) => setDeptTag(e.target.value)}
+              placeholder="e.g. IT DEPARTMENT or HR DEPARTMENT"
+            />
+          </label>
+
+          <label>
+            Custom Department Logo Image URL / Upload
+            <input
+              type="text"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="https://... logo image"
+            />
+            <FileUpload
+              onDataUrl={(url) => setLogoUrl(url)}
+              accept="image/*"
+              label="Upload Custom Logo File"
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Hero Background Video / Image Customization */}
+      <div className="admin-panel mb-6">
+        <h2>Hero Background Media (Video or Image)</h2>
+        <div className="admin-form-grid">
+          <label>
+            Background Type
+            <select
+              value={bgMediaType}
+              onChange={(e) => setBgMediaType(e.target.value)}
+              style={{ width: '100%', padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+            >
+              <option value="gradient">Default Gradient / Clean Light</option>
+              <option value="image">Custom Background Image</option>
+              <option value="video">Custom Background Video (MP4 / WebM)</option>
+            </select>
+          </label>
+
+          {bgMediaType !== 'gradient' && (
+            <label>
+              Media URL or File Upload ({bgMediaType === 'video' ? 'Video File' : 'Image File'})
+              <input
+                type="text"
+                value={bgMediaUrl}
+                onChange={(e) => setBgMediaUrl(e.target.value)}
+                placeholder={bgMediaType === 'video' ? 'https://...video.mp4' : 'https://...image.jpg'}
+              />
+              <FileUpload
+                onDataUrl={(url) => setBgMediaUrl(url)}
+                accept={bgMediaType === 'video' ? 'video/*' : 'image/*'}
+                label={`Upload ${bgMediaType === 'video' ? 'Video' : 'Image'} File`}
+              />
+            </label>
+          )}
+        </div>
       </div>
 
       {/* Hero Carousel Editor */}

@@ -13,19 +13,25 @@ const links = [
 
 export default function Navbar() {
   const { data, isAdmin } = useAcademy();
+  const logoUrl = data?.site?.logoUrl;
+  const deptTag = data?.site?.deptTag || 'IT DEPARTMENT';
 
   return (
     <header className="sharepoint-navbar">
       {/* Top Header Bar */}
       <div className="container navbar-top-bar">
         <Link to="/" className="navbar-brand-group">
-          <div className="navbar-logo-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-              <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
-            </svg>
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Department Logo" className="navbar-logo-img" />
+          ) : (
+            <div className="navbar-logo-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
+              </svg>
+            </div>
+          )}
           <span className="navbar-brand-title">{data?.theme?.headerTitle || data?.site?.name || 'SharePoint Academy'}</span>
-          <span className="navbar-dept-tag">IT DEPARTMENT</span>
+          <span className="navbar-dept-tag">{deptTag}</span>
         </Link>
 
         <div className="navbar-actions-right">

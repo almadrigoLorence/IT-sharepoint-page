@@ -25,12 +25,15 @@ import AdminResources from './pages/admin/AdminResources.jsx';
 import AdminEvents from './pages/admin/AdminEvents.jsx';
 import AdminProgress from './pages/admin/AdminProgress.jsx';
 
+import AiChatbot from './components/AiChatbot.jsx';
+
 function PublicLayout({ children }) {
   return (
     <>
       <Navbar />
       {children}
       <Footer />
+      <AiChatbot />
     </>
   );
 }

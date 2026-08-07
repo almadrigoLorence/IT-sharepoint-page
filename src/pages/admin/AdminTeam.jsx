@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { useAcademy } from '../../context/DataContext.jsx';
 import Button from '../../components/Button.jsx';
 import FileUpload from '../../components/FileUpload.jsx';
-import './AdminLayout.css';
-import './admin-shared.css';
+import './AdminTeam.css';
 
 export default function AdminTeam() {
   const { data, updateTeamSettings, addTeamMember, updateTeamMember, removeTeamMember } = useAcademy();
   const team = data.team || { title: '', description: '', members: [] };
 
   const [title, setTitle] = useState(team.title || 'Meet Our IT & Engineering Team');
-  const [description, setDescription] = useState(team.description || 'The dedicated experts leading reliability, training, cloud architecture, and compliance across ASEPH.');
+  const [description, setDescription] = useState(
+    team.description || 'The dedicated experts leading reliability, training, cloud architecture, and compliance across ASEPH.'
+  );
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -43,129 +44,160 @@ export default function AdminTeam() {
   }
 
   return (
-    <div>
-      <div className="admin-page-head">
+    <div className="admin-team-page">
+      {/* Top Page Header */}
+      <div className="team-admin-header">
         <div>
-          <span className="eyebrow">Home Page Customization</span>
+          <span className="team-eyebrow">HOME PAGE CUSTOMIZATION</span>
           <h1>Team Presentation Management</h1>
           <p>Add team members, assign roles, upload avatars, and edit section titles displayed on the Home page.</p>
         </div>
-        <Button variant="primary" onClick={() => setCreating((c) => !c)}>
+        <Button variant="primary" size="md" onClick={() => setCreating((c) => !c)}>
           {creating ? 'Close Form' : '+ Add Team Member'}
         </Button>
       </div>
 
       {savedNotice && (
-        <div className="admin-notice success">
-          ⚡ Team section settings saved to database!
+        <div className="team-alert-banner">
+          ⚡ Team section settings successfully saved to database!
         </div>
       )}
 
-      {/* Section Title & Description */}
-      <form className="admin-panel mb-6" onSubmit={handleSaveHeader}>
-        <h2>Team Section Header</h2>
-        <div className="admin-form-grid">
-          <label>
-            Section Title
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Meet Our IT & Engineering Team"
-              required
-            />
-          </label>
-
-          <label>
-            Section Subtitle / Description
-            <textarea
-              rows="2"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description of your team..."
-            />
-          </label>
+      {/* Section Header Editor Box */}
+      <div className="admin-team-card-box">
+        <div className="box-head">
+          <span className="box-icon">🏷️</span>
+          <h2>Team Section Header Settings</h2>
         </div>
-
-        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
-          <Button type="submit" variant="secondary" size="sm">
-            Save Section Header
-          </Button>
-        </div>
-      </form>
-
-      {/* New Member Form */}
-      {creating && (
-        <form className="admin-panel mb-6" onSubmit={handleAddMember}>
-          <h2>New Team Member</h2>
-          <div className="admin-form-grid">
-            <label>
-              Full Name *
+        <form onSubmit={handleSaveHeader} className="team-header-form">
+          <div className="form-group-row">
+            <div className="field-group">
+              <label>Section Title</label>
               <input
                 type="text"
-                value={memberForm.name}
-                onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
-                placeholder="e.g. J. Ramirez"
+                className="custom-admin-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Meet Our IT & Engineering Team"
                 required
               />
-            </label>
-
-            <label>
-              Role / Position *
+            </div>
+            <div className="field-group">
+              <label>Section Subtitle / Description</label>
               <input
                 type="text"
-                value={memberForm.role}
-                onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
-                placeholder="e.g. Lead Reliability Engineer"
-                required
+                className="custom-admin-input"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Brief description of your team..."
               />
-            </label>
-
-            <label>
-              Avatar Image URL / Upload
-              <input
-                type="text"
-                value={memberForm.avatar}
-                onChange={(e) => setMemberForm({ ...memberForm, avatar: e.target.value })}
-                placeholder="https://..."
-              />
-              <FileUpload
-                onDataUrl={(url) => setMemberForm({ ...memberForm, avatar: url })}
-                accept="image/*"
-                label="Upload Avatar Image"
-              />
-            </label>
-
-            <label>
-              Short Bio / Specialties
-              <textarea
-                rows="2"
-                value={memberForm.bio}
-                onChange={(e) => setMemberForm({ ...memberForm, bio: e.target.value })}
-                placeholder="Specializes in TCT, HAST testing standards..."
-              />
-            </label>
+            </div>
           </div>
-
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-            <Button type="button" variant="ghost" onClick={() => setCreating(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              Add Member
+          <div className="form-action-right">
+            <Button type="submit" variant="secondary" size="sm">
+              Save Section Header
             </Button>
           </div>
         </form>
+      </div>
+
+      {/* New Member Form + Live Card Preview */}
+      {creating && (
+        <div className="admin-team-card-box highlight-box animate-fade-in">
+          <div className="box-head">
+            <span className="box-icon">👤</span>
+            <h2>New Team Member</h2>
+          </div>
+
+          <div className="side-by-side-layout">
+            <form onSubmit={handleAddMember} className="team-member-form">
+              <div className="field-group">
+                <label>Full Name *</label>
+                <input
+                  type="text"
+                  className="custom-admin-input"
+                  value={memberForm.name}
+                  onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                  placeholder="e.g. J. Ramirez"
+                  required
+                />
+              </div>
+
+              <div className="field-group">
+                <label>Role / Position *</label>
+                <input
+                  type="text"
+                  className="custom-admin-input"
+                  value={memberForm.role}
+                  onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                  placeholder="e.g. Lead Reliability Engineer"
+                  required
+                />
+              </div>
+
+              <div className="field-group">
+                <label>Avatar Image URL or Upload File</label>
+                <input
+                  type="text"
+                  className="custom-admin-input mb-2"
+                  value={memberForm.avatar}
+                  onChange={(e) => setMemberForm({ ...memberForm, avatar: e.target.value })}
+                  placeholder="https://..."
+                />
+                <FileUpload
+                  onDataUrl={(url) => setMemberForm({ ...memberForm, avatar: url })}
+                  accept="image/*"
+                  label="Upload Image File"
+                />
+              </div>
+
+              <div className="field-group">
+                <label>Short Bio / Specialties</label>
+                <textarea
+                  rows="3"
+                  className="custom-admin-textarea"
+                  value={memberForm.bio}
+                  onChange={(e) => setMemberForm({ ...memberForm, bio: e.target.value })}
+                  placeholder="Specializes in TCT, HAST testing standards..."
+                />
+              </div>
+
+              <div className="form-action-right gap-2">
+                <Button type="button" variant="ghost" size="sm" onClick={() => setCreating(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" size="sm">
+                  Add Member
+                </Button>
+              </div>
+            </form>
+
+            {/* Live Member Card Preview */}
+            <div className="card-preview-column">
+              <span className="preview-tag">LIVE CARD PREVIEW</span>
+              <div className="member-preview-card">
+                <img src={memberForm.avatar} alt="Preview Avatar" className="preview-avatar" />
+                <h3 className="preview-name">{memberForm.name || 'Member Name'}</h3>
+                <span className="preview-role">{memberForm.role || 'Assigned Role'}</span>
+                <p className="preview-bio">{memberForm.bio || 'Short member bio or specialties will appear here.'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Members Grid List */}
-      <div className="admin-panel">
-        <h2>Team Members ({team.members?.length || 0})</h2>
-        <div className="admin-entity-list" style={{ marginTop: '1rem' }}>
+      {/* Members Directory List */}
+      <div className="admin-team-card-box">
+        <div className="box-head">
+          <span className="box-icon">👥</span>
+          <h2>Active Team Members ({team.members?.length || 0})</h2>
+        </div>
+
+        <div className="members-directory-grid">
           {(team.members || []).map((member) => (
-            <div key={member.id} className="admin-entity-row" style={{ padding: '1.25rem' }}>
+            <div key={member.id} className="team-member-item-card">
               {editingId === member.id ? (
-                <EditMemberForm
+                <EditMemberInlineForm
                   member={member}
                   onSave={(updated) => {
                     updateTeamMember(member.id, updated);
@@ -174,26 +206,21 @@ export default function AdminTeam() {
                   onCancel={() => setEditingId(null)}
                 />
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img
-                      src={member.avatar}
-                      alt={member.name}
-                      style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '2px solid #0078d4' }}
-                    />
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f3f4f6' }}>{member.name}</h3>
-                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#0078d4', fontWeight: 600 }}>{member.role}</p>
-                      {member.bio && <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#9ca3af' }}>{member.bio}</p>}
+                <div className="member-item-inner">
+                  <div className="member-info-group">
+                    <img src={member.avatar} alt={member.name} className="member-item-avatar" />
+                    <div className="member-item-text">
+                      <h3>{member.name}</h3>
+                      <span className="member-item-role">{member.role}</span>
+                      {member.bio && <p className="member-item-bio">{member.bio}</p>}
                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="admin-icon-btn" onClick={() => setEditingId(member.id)} title="Edit Member">
-                      ✎
+                  <div className="member-item-actions">
+                    <button className="icon-edit-btn" onClick={() => setEditingId(member.id)} title="Edit Member">
+                      ✎ Edit
                     </button>
-                    <button className="admin-icon-btn danger" onClick={() => removeTeamMember(member.id)} title="Delete Member">
-                      🗑
+                    <button className="icon-delete-btn" onClick={() => removeTeamMember(member.id)} title="Delete Member">
+                      🗑 Delete
                     </button>
                   </div>
                 </div>
@@ -206,34 +233,61 @@ export default function AdminTeam() {
   );
 }
 
-function EditMemberForm({ member, onSave, onCancel }) {
+function EditMemberInlineForm({ member, onSave, onCancel }) {
   const [form, setForm] = useState(member);
 
   return (
-    <div>
-      <h3 style={{ marginBottom: '1rem' }}>Edit Team Member</h3>
-      <div className="admin-form-grid">
-        <label>
-          Full Name
-          <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        </label>
-        <label>
-          Role
-          <input type="text" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} />
-        </label>
-        <label>
-          Avatar Image
-          <input type="text" value={form.avatar} onChange={(e) => setForm({ ...form, avatar: e.target.value })} />
-          <FileUpload onDataUrl={(url) => setForm({ ...form, avatar: url })} accept="image/*" label="Upload Avatar" />
-        </label>
-        <label>
-          Bio
-          <textarea rows="2" value={form.bio || ''} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
-        </label>
+    <div className="inline-edit-form">
+      <h4>Edit Team Member Info</h4>
+      <div className="form-group-row mb-3">
+        <div className="field-group">
+          <label>Full Name</label>
+          <input
+            type="text"
+            className="custom-admin-input"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </div>
+        <div className="field-group">
+          <label>Role</label>
+          <input
+            type="text"
+            className="custom-admin-input"
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+          />
+        </div>
       </div>
-      <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" variant="primary" onClick={() => onSave(form)}>Save Changes</Button>
+
+      <div className="field-group mb-3">
+        <label>Avatar URL or File Upload</label>
+        <input
+          type="text"
+          className="custom-admin-input mb-2"
+          value={form.avatar}
+          onChange={(e) => setForm({ ...form, avatar: e.target.value })}
+        />
+        <FileUpload onDataUrl={(url) => setForm({ ...form, avatar: url })} accept="image/*" label="Upload Avatar File" />
+      </div>
+
+      <div className="field-group mb-3">
+        <label>Bio</label>
+        <textarea
+          rows="2"
+          className="custom-admin-textarea"
+          value={form.bio || ''}
+          onChange={(e) => setForm({ ...form, bio: e.target.value })}
+        />
+      </div>
+
+      <div className="form-action-right gap-2">
+        <Button size="sm" variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button size="sm" variant="primary" onClick={() => onSave(form)}>
+          Save Member
+        </Button>
       </div>
     </div>
   );

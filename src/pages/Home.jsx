@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAcademy } from '../context/DataContext.jsx';
 import useLoading from '../hooks/useLoading.js';
@@ -10,7 +9,6 @@ import './Home.css';
 export default function Home() {
   const { data } = useAcademy();
   const loading = useLoading([], 300);
-  const [query, setQuery] = useState('');
 
   const upcomingEvents = [...(data.events || [])]
     .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -18,15 +16,63 @@ export default function Home() {
 
   const featuredCourses = [...(data.courses || [])].filter((c) => c.featured).slice(0, 3);
 
-  function handleSearch(e) {
-    e.preventDefault();
-    window.location.assign(`/#/catalog${query ? `?q=${encodeURIComponent(query)}` : ''}`);
-  }
+  // Layout order array
+  const layoutOrder = data?.theme?.layout || ['hero', 'quickLinks', 'news', 'team', 'courses', 'resources', 'events'];
 
-  // Layout order array (e.g. ['carousel', 'quickLinks', 'news', 'team', 'courses', 'resources', 'events', 'progress'])
-  const layoutOrder = data?.theme?.layout || ['carousel', 'quickLinks', 'news', 'team', 'courses', 'resources', 'events'];
+  // Hero background media
+  const bgMediaType = data?.theme?.bgMediaType || 'gradient';
+  const bgMediaUrl = data?.theme?.bgMediaUrl || '';
 
   const sectionMap = {
+    hero: (
+      <section key="hero" className="hero-section">
+        {/* Background media layer */}
+        {bgMediaType === 'video' && bgMediaUrl && (
+          <video className="hero-bg-video" autoPlay loop muted playsInline>
+            <source src={bgMediaUrl} />
+          </video>
+        )}
+        {bgMediaType === 'image' && bgMediaUrl && (
+          <div className="hero-bg-image" style={{ backgroundImage: `url(${bgMediaUrl})` }} />
+        )}
+        {bgMediaType === 'gradient' && <div className="hero-bg-gradient" />}
+
+        <div className="hero-overlay" />
+
+        <div className="container hero-content">
+          <span className="hero-eyebrow animate-fade-in">{data?.site?.deptTag || 'IT DEPARTMENT'}</span>
+          <h1 className="hero-title animate-fade-in">{data?.theme?.headerTitle || data?.site?.name || 'SharePoint Academy'}</h1>
+          <p className="hero-subtitle animate-fade-in">
+            {data?.site?.heroSubtitle || data?.site?.tagline || 'Enterprise governance, cloud infrastructure, reliability, and modern IT skills.'}
+          </p>
+          <div className="hero-actions animate-fade-in">
+            <Link to="/catalog"><Button variant="primary" size="lg">Browse Courses</Button></Link>
+            <Link to="/paths"><Button variant="secondary" size="lg">View Paths</Button></Link>
+          </div>
+
+          {/* Floating metric cards */}
+          <div className="hero-metrics-strip">
+            <div className="metric-pill animate-card-float" style={{ animationDelay: '0s' }}>
+              <span className="metric-value">{data.courses?.length || 6}</span>
+              <span className="metric-label">Courses</span>
+            </div>
+            <div className="metric-pill animate-card-float" style={{ animationDelay: '0.15s' }}>
+              <span className="metric-value">{data.paths?.length || 4}</span>
+              <span className="metric-label">Paths</span>
+            </div>
+            <div className="metric-pill animate-card-float" style={{ animationDelay: '0.3s' }}>
+              <span className="metric-value">{data.team?.members?.length || 4}</span>
+              <span className="metric-label">Experts</span>
+            </div>
+            <div className="metric-pill animate-card-float" style={{ animationDelay: '0.45s' }}>
+              <span className="metric-value">{data.events?.length || 4}</span>
+              <span className="metric-label">Events</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    ),
+
     carousel: (
       <div key="carousel" className="home-carousel-wrapper">
         <Carousel slides={data?.theme?.carousel} />
@@ -35,25 +81,6 @@ export default function Home() {
 
     quickLinks: (
       <section key="quickLinks" className="section container">
-        <div className="search-bar-wrapper">
-          <form className="search-bar-box" onSubmit={handleSearch}>
-            <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search courses, tracks, or resources…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search courses"
-            />
-            <Button type="submit" variant="primary" className="btn-search-submit">
-              Search
-            </Button>
-          </form>
-        </div>
-
         <div className="quick-links-grid">
           {(data.quickLinks || []).map((q) => (
             <Link to={q.to} key={q.id} className="quick-link-card">
@@ -183,9 +210,54 @@ export default function Home() {
     progress: null,
   };
 
+  // Render custom containers from database
+  const customContainers = data.customContainers || [];
+
   return (
     <div className="home-page">
       {layoutOrder.map((sectionId) => sectionMap[sectionId] || null)}
+
+      {/* Custom containers from admin */}
+      {customContainers.length > 0 && (
+        <section className="section container">
+          {customContainers.map((container) => (
+            <div key={container.id} className="custom-container-block">
+              <div className="section-head-bar">
+                <div>
+                  <h2>{container.title}</h2>
+                  {container.subtitle && <p className="subtitle">{container.subtitle}</p>}
+                </div>
+              </div>
+              {container.type === 'metrics' && (
+                <div className="custom-metrics-row">
+                  {(typeof container.content_json === 'string'
+                    ? JSON.parse(container.content_json)
+                    : container.content_json || []
+                  ).map((item, idx) => (
+                    <div key={idx} className="custom-metric-card animate-card-float" style={{ animationDelay: `${idx * 0.1}s` }}>
+                      <span className="custom-metric-value">{item.value}</span>
+                      <span className="custom-metric-label">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {container.type === 'info_card' && (
+                <div className="custom-info-card">
+                  {(typeof container.content_json === 'string'
+                    ? JSON.parse(container.content_json)
+                    : container.content_json || []
+                  ).map((item, idx) => (
+                    <div key={idx} className="info-card-item">
+                      <h4>{item.title || item.label}</h4>
+                      <p>{item.body || item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }
