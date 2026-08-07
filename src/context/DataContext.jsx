@@ -252,6 +252,48 @@ export function DataProvider({ children }) {
     });
   }, [isDbConnected]);
 
+  const addCustomContainer = useCallback((container) => {
+    const withId = { id: container.id || uid('cc'), ...container };
+    setData((d) => {
+      const updated = [...(d.customContainers || []), withId];
+      if (isDbConnected) {
+        fetch(`${API_URL}/containers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(withId),
+        }).catch((err) => console.error('API sync error (add container):', err));
+      }
+      return { ...d, customContainers: updated };
+    });
+  }, [isDbConnected]);
+
+  const updateCustomContainer = useCallback((id, patch) => {
+    setData((d) => {
+      const updated = (d.customContainers || []).map((c) => (c.id === id ? { ...c, ...patch } : c));
+      const target = updated.find((c) => c.id === id);
+      if (isDbConnected && target) {
+        fetch(`${API_URL}/containers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(target),
+        }).catch((err) => console.error('API sync error (update container):', err));
+      }
+      return { ...d, customContainers: updated };
+    });
+  }, [isDbConnected]);
+
+  const removeCustomContainer = useCallback((id) => {
+    setData((d) => {
+      const updated = (d.customContainers || []).filter((c) => c.id !== id);
+      if (isDbConnected) {
+        fetch(`${API_URL}/containers/${id}`, {
+          method: 'DELETE',
+        }).catch((err) => console.error('API sync error (delete container):', err));
+      }
+      return { ...d, customContainers: updated };
+    });
+  }, [isDbConnected]);
+
   const value = {
     data,
     isAdmin,
@@ -272,6 +314,9 @@ export function DataProvider({ children }) {
     addTeamMember,
     updateTeamMember,
     removeTeamMember,
+    addCustomContainer,
+    updateCustomContainer,
+    removeCustomContainer,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

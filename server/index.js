@@ -7,7 +7,8 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const PORT = process.env.PORT || 5000;
 
@@ -21,6 +22,28 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+});
+
+// Root info route
+app.get('/', (req, res) => {
+  res.json({
+    name: 'IT Academy API Server',
+    status: 'running',
+    database: 'it_academy (MySQL/XAMPP)',
+    endpoints: {
+      health: '/api/health',
+      data: '/api/data',
+      site: 'POST /api/site',
+      courses: 'GET/POST /api/courses, DELETE /api/courses/:id',
+      paths: 'GET/POST /api/paths, DELETE /api/paths/:id',
+      resources: 'GET/POST /api/resources, DELETE /api/resources/:id',
+      events: 'GET/POST /api/events, DELETE /api/events/:id',
+      news: 'GET/POST /api/news, DELETE /api/news/:id',
+      team: 'POST /api/team, POST /api/team/members, DELETE /api/team/members/:id',
+      theme: 'POST /api/theme',
+      layout: 'POST /api/layout',
+    },
+  });
 });
 
 // Health check endpoint
@@ -149,10 +172,19 @@ app.post('/api/site', async (req, res) => {
       `INSERT INTO ita_site_settings (id, name, tagline, heroSubtitle, footerNote, deptTag, logoUrl)
        VALUES (1, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE name=VALUES(name), tagline=VALUES(tagline), heroSubtitle=VALUES(heroSubtitle), footerNote=VALUES(footerNote), deptTag=VALUES(deptTag), logoUrl=VALUES(logoUrl)`,
-      [name, tagline, heroSubtitle, footerNote, deptTag || 'IT DEPARTMENT', logoUrl || '']
+      [
+        name || 'SharePoint Academy',
+        tagline || 'Core Training Tracks',
+        heroSubtitle || 'Welcome to the SharePoint Academy, hosted by the IT Department.',
+        footerNote || 'SharePoint Academy · IT Department',
+        deptTag || 'IT DEPARTMENT',
+        logoUrl || '',
+      ]
     );
+    console.log('✅ Updated site settings in MySQL');
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error updating site settings:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -170,13 +202,28 @@ app.post('/api/courses', async (req, res) => {
        audience=VALUES(audience), trainer=VALUES(trainer), prerequisites=VALUES(prerequisites),
        nextSession=VALUES(nextSession), description=VALUES(description), modules_json=VALUES(modules_json), materials_json=VALUES(materials_json)`,
       [
-        c.id, c.title, c.category, c.level, c.format, c.duration, c.labsCount || 0,
-        c.owner, c.featured ? 1 : 0, c.audience, c.trainer, c.prerequisites, c.nextSession,
-        c.description || '', JSON.stringify(c.modules || []), JSON.stringify(c.materials || []),
+        c.id,
+        c.title || 'Untitled Course',
+        c.category || 'General',
+        c.level || 'Beginner',
+        c.format || 'Hybrid',
+        c.duration || '1 hour',
+        c.labsCount || 0,
+        c.owner || 'Admin',
+        c.featured ? 1 : 0,
+        c.audience || 'All Staff',
+        c.trainer || 'Instructor',
+        c.prerequisites || 'None',
+        c.nextSession || 'TBD',
+        c.description || '',
+        JSON.stringify(c.modules || []),
+        JSON.stringify(c.materials || []),
       ]
     );
+    console.log('✅ Saved course to MySQL:', c.id);
     res.json({ success: true, id: c.id });
   } catch (err) {
+    console.error('❌ Error saving course:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -184,8 +231,10 @@ app.post('/api/courses', async (req, res) => {
 app.delete('/api/courses/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM ita_courses WHERE id = ?', [req.params.id]);
+    console.log('✅ Deleted course from MySQL:', req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error deleting course:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -199,10 +248,12 @@ app.post('/api/paths', async (req, res) => {
        VALUES (?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        title=VALUES(title), sequence_json=VALUES(sequence_json), effort=VALUES(effort), recommendedStart=VALUES(recommendedStart)`,
-      [p.id, p.title, JSON.stringify(p.sequence || []), p.effort, p.recommendedStart]
+      [p.id, p.title || 'New Path', JSON.stringify(p.sequence || []), p.effort || 'Self-paced', p.recommendedStart || 'Start']
     );
+    console.log('✅ Saved path to MySQL:', p.id);
     res.json({ success: true, id: p.id });
   } catch (err) {
+    console.error('❌ Error saving path:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -210,8 +261,10 @@ app.post('/api/paths', async (req, res) => {
 app.delete('/api/paths/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM ita_paths WHERE id = ?', [req.params.id]);
+    console.log('✅ Deleted path from MySQL:', req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error deleting path:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -225,10 +278,12 @@ app.post('/api/resources', async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        name=VALUES(name), type=VALUES(type), course=VALUES(course), owner=VALUES(owner), reviewDate=VALUES(reviewDate)`,
-      [r.id, r.name, r.type, r.course, r.owner, r.reviewDate]
+      [r.id, r.name || 'Resource', r.type || 'Guide', r.course || 'All', r.owner || 'Admin', r.reviewDate || '2026-12-31']
     );
+    console.log('✅ Saved resource to MySQL:', r.id);
     res.json({ success: true, id: r.id });
   } catch (err) {
+    console.error('❌ Error saving resource:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -236,8 +291,10 @@ app.post('/api/resources', async (req, res) => {
 app.delete('/api/resources/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM ita_resources WHERE id = ?', [req.params.id]);
+    console.log('✅ Deleted resource from MySQL:', req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error deleting resource:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -251,10 +308,12 @@ app.post('/api/events', async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        title=VALUES(title), date=VALUES(date), time=VALUES(time), venue=VALUES(venue), seats=VALUES(seats)`,
-      [e.id, e.title, e.date, e.time, e.venue, e.seats || 0]
+      [e.id, e.title || 'Event', e.date || '2026-08-01', e.time || '10:00 AM', e.venue || 'Online', e.seats || 0]
     );
+    console.log('✅ Saved event to MySQL:', e.id);
     res.json({ success: true, id: e.id });
   } catch (err) {
+    console.error('❌ Error saving event:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -262,8 +321,10 @@ app.post('/api/events', async (req, res) => {
 app.delete('/api/events/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM ita_events WHERE id = ?', [req.params.id]);
+    console.log('✅ Deleted event from MySQL:', req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error deleting event:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -277,10 +338,12 @@ app.post('/api/news', async (req, res) => {
        VALUES (?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        title=VALUES(title), body=VALUES(body), date=VALUES(date), tag=VALUES(tag)`,
-      [n.id, n.title, n.body, n.date, n.tag]
+      [n.id, n.title || 'Announcement', n.body || '', n.date || '2026-08-01', n.tag || 'General']
     );
+    console.log('✅ Saved news item to MySQL:', n.id);
     res.json({ success: true, id: n.id });
   } catch (err) {
+    console.error('❌ Error saving news:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -288,8 +351,10 @@ app.post('/api/news', async (req, res) => {
 app.delete('/api/news/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM ita_news WHERE id = ?', [req.params.id]);
+    console.log('✅ Deleted news from MySQL:', req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error deleting news:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -300,10 +365,12 @@ app.post('/api/progress', async (req, res) => {
   try {
     await pool.query(
       `UPDATE ita_learner_progress SET learner = ?, path_title = ?, path_percent = ?, completions_json = ? WHERE id = 1`,
-      [learner, pathProgress?.path, pathProgress?.percent, JSON.stringify(completions || [])]
+      [learner || 'You', pathProgress?.path || 'Lab Technician', pathProgress?.percent || 60, JSON.stringify(completions || [])]
     );
+    console.log('✅ Updated learner progress in MySQL');
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error updating progress:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -315,10 +382,12 @@ app.post('/api/team', async (req, res) => {
     await pool.query(
       `INSERT INTO ita_team_settings (id, title, description) VALUES (1, ?, ?)
        ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description)`,
-      [title, description]
+      [title || 'Meet Our IT & Engineering Team', description || '']
     );
+    console.log('✅ Updated team settings in MySQL');
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error updating team settings:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -330,10 +399,12 @@ app.post('/api/team/members', async (req, res) => {
       `INSERT INTO ita_team_members (id, name, role, avatar, bio, sort_order)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE name=VALUES(name), role=VALUES(role), avatar=VALUES(avatar), bio=VALUES(bio), sort_order=VALUES(sort_order)`,
-      [m.id, m.name, m.role, m.avatar, m.bio || '', m.sort_order || 0]
+      [m.id, m.name || 'Team Member', m.role || 'Member', m.avatar || '', m.bio || '', m.sort_order || 0]
     );
+    console.log('✅ Saved team member to MySQL:', m.id, m.name);
     res.json({ success: true, id: m.id });
   } catch (err) {
+    console.error('❌ Error saving team member:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -341,8 +412,10 @@ app.post('/api/team/members', async (req, res) => {
 app.delete('/api/team/members/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM ita_team_members WHERE id = ?', [req.params.id]);
+    console.log('✅ Deleted team member from MySQL:', req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error deleting team member:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -372,8 +445,10 @@ app.post('/api/theme', async (req, res) => {
         JSON.stringify(t.layout || []),
       ]
     );
+    console.log('✅ Saved theme settings to MySQL');
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error saving theme settings:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -385,8 +460,39 @@ app.post('/api/layout', async (req, res) => {
       `UPDATE ita_theme_settings SET layout_json = ? WHERE id = 1`,
       [JSON.stringify(layout || [])]
     );
+    console.log('✅ Saved page layout order to MySQL');
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Error saving page layout:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// CUSTOM CONTAINERS API
+app.post('/api/containers', async (req, res) => {
+  const c = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO ita_custom_containers (id, title, subtitle, type, content_json, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE title=VALUES(title), subtitle=VALUES(subtitle), type=VALUES(type), content_json=VALUES(content_json), sort_order=VALUES(sort_order)`,
+      [c.id, c.title || 'Custom Container', c.subtitle || '', c.type || 'info_card', JSON.stringify(c.content || c.content_json || []), c.sort_order || 0]
+    );
+    console.log('✅ Saved custom container to MySQL:', c.id);
+    res.json({ success: true, id: c.id });
+  } catch (err) {
+    console.error('❌ Error saving custom container:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/containers/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM ita_custom_containers WHERE id = ?', [req.params.id]);
+    console.log('✅ Deleted custom container from MySQL:', req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Error deleting custom container:', err);
     res.status(500).json({ error: err.message });
   }
 });
