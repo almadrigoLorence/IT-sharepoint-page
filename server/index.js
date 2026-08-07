@@ -27,7 +27,7 @@ const pool = mysql.createPool({
 app.get('/api/health', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT 1');
-    res.json({ status: 'connected', db: 'MySQL XAMPP' });
+    res.json({ status: 'connected', db: 'MySQL XAMPP (aseph_academy)' });
   } catch (err) {
     res.status(500).json({ status: 'disconnected', error: err.message });
   }
@@ -72,7 +72,7 @@ app.get('/api/data', async (req, res) => {
       site: siteRow || {
         name: 'SharePoint Academy',
         tagline: 'Core Training Tracks',
-        heroSubtitle: 'A training hub for reliability, calibration, and lab skills',
+        heroSubtitle: 'A training hub for enterprise governance, cloud infrastructure, reliability, and modern IT skills.',
         footerNote: 'SharePoint Academy · IT Department',
       },
       quickLinks,
@@ -103,13 +103,18 @@ app.post('/api/site', async (req, res) => {
   }
 });
 
-// COURSE CRUD
+// COURSES API (CREATE / UPDATE / DELETE)
 app.post('/api/courses', async (req, res) => {
   const c = req.body;
   try {
     await pool.query(
       `INSERT INTO courses (id, title, category, level, format, duration, labsCount, owner, featured, audience, trainer, prerequisites, nextSession, description, modules_json, materials_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       title=VALUES(title), category=VALUES(category), level=VALUES(level), format=VALUES(format),
+       duration=VALUES(duration), labsCount=VALUES(labsCount), owner=VALUES(owner), featured=VALUES(featured),
+       audience=VALUES(audience), trainer=VALUES(trainer), prerequisites=VALUES(prerequisites),
+       nextSession=VALUES(nextSession), description=VALUES(description), modules_json=VALUES(modules_json), materials_json=VALUES(materials_json)`,
       [
         c.id, c.title, c.category, c.level, c.format, c.duration, c.labsCount || 0,
         c.owner, c.featured ? 1 : 0, c.audience, c.trainer, c.prerequisites, c.nextSession,
@@ -122,6 +127,134 @@ app.post('/api/courses', async (req, res) => {
   }
 });
 
+app.delete('/api/courses/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM courses WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATHS API (CREATE / UPDATE / DELETE)
+app.post('/api/paths', async (req, res) => {
+  const p = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO paths (id, title, sequence_json, effort, recommendedStart)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       title=VALUES(title), sequence_json=VALUES(sequence_json), effort=VALUES(effort), recommendedStart=VALUES(recommendedStart)`,
+      [p.id, p.title, JSON.stringify(p.sequence || []), p.effort, p.recommendedStart]
+    );
+    res.json({ success: true, id: p.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/paths/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM paths WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// RESOURCES API (CREATE / UPDATE / DELETE)
+app.post('/api/resources', async (req, res) => {
+  const r = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO resources (id, name, type, course, owner, reviewDate)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       name=VALUES(name), type=VALUES(type), course=VALUES(course), owner=VALUES(owner), reviewDate=VALUES(reviewDate)`,
+      [r.id, r.name, r.type, r.course, r.owner, r.reviewDate]
+    );
+    res.json({ success: true, id: r.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/resources/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM resources WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// EVENTS API (CREATE / UPDATE / DELETE)
+app.post('/api/events', async (req, res) => {
+  const e = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO events (id, title, date, time, venue, seats)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       title=VALUES(title), date=VALUES(date), time=VALUES(time), venue=VALUES(venue), seats=VALUES(seats)`,
+      [e.id, e.title, e.date, e.time, e.venue, e.seats || 0]
+    );
+    res.json({ success: true, id: e.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/events/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM events WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// NEWS API (CREATE / UPDATE / DELETE)
+app.post('/api/news', async (req, res) => {
+  const n = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO news (id, title, body, date, tag)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       title=VALUES(title), body=VALUES(body), date=VALUES(date), tag=VALUES(tag)`,
+      [n.id, n.title, n.body, n.date, n.tag]
+    );
+    res.json({ success: true, id: n.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/news/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM news WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PROGRESS API (UPDATE)
+app.post('/api/progress', async (req, res) => {
+  const { learner, pathProgress, completions } = req.body;
+  try {
+    await pool.query(
+      `UPDATE learner_progress SET learner = ?, path_title = ?, path_percent = ?, completions_json = ? WHERE id = 1`,
+      [learner, pathProgress?.path, pathProgress?.percent, JSON.stringify(completions || [])]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 SharePoint Academy API server running on http://localhost:${PORT}`);
 });
+
