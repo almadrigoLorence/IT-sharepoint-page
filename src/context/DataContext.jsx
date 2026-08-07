@@ -1,10 +1,19 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { seedData } from '../data/seed.js';
 
 const STORAGE_KEY = 'ita-sharepoint-data-v2';
 const AUTH_KEY = 'ita-sharepoint-admin-auth';
 const ADMIN_PASSWORD = 'academy-admin';
-const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const GH_TOKEN_KEY = 'ita-github-pat';
+
+// GitHub repo coordinates — change these if you fork the repo
+const GH_OWNER = 'almadrigoLorence';
+const GH_REPO = 'IT-sharepoint-page';
+const GH_BRANCH = 'main';
+const GH_DATA_PATH = 'db/data.json';
+
+const RAW_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/${GH_DATA_PATH}`;
+const API_URL = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_DATA_PATH}`;
 
 const DataContext = createContext(null);
 
@@ -25,80 +34,139 @@ export function DataProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
   const [saving, setSaving] = useState(false);
   const [isDbConnected, setIsDbConnected] = useState(false);
-  const [activeApiUrl, setActiveApiUrl] = useState(DEFAULT_API_URL);
+  const [githubToken, setGithubTokenState] = useState(() => localStorage.getItem(GH_TOKEN_KEY) || '');
+  const fileShaRef = useRef(null);
+  const commitTimerRef = useRef(null);
 
-  // Helper function to sync with MySQL API automatically
-  const syncApi = useCallback(async (endpoint, method, payload) => {
-    const candidateEndpoints = Array.from(new Set([
-      activeApiUrl,
-      'http://localhost:5000/api',
-      'http://127.0.0.1:5000/api',
-      '/api',
-    ]));
-
-    for (const ep of candidateEndpoints) {
-      try {
-        const res = await fetch(`${ep}${endpoint}`, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: payload ? JSON.stringify(payload) : undefined,
-        });
-        if (res.ok) {
-          setIsDbConnected(true);
-          setActiveApiUrl(ep);
-          console.log(`⚡ MySQL API sync success [${ep}]: ${method} ${endpoint}`);
-          return true;
-        }
-      } catch (err) {
-        // Try next endpoint candidate
-      }
+  // Persist GitHub token to localStorage
+  const setGithubToken = useCallback((token) => {
+    const trimmed = (token || '').trim();
+    setGithubTokenState(trimmed);
+    if (trimmed) {
+      localStorage.setItem(GH_TOKEN_KEY, trimmed);
+    } else {
+      localStorage.removeItem(GH_TOKEN_KEY);
     }
-    setIsDbConnected(false);
-    return false;
-  }, [activeApiUrl]);
-
-  // Attempt to fetch data from Express/MySQL API server on load
-  useEffect(() => {
-    async function autoDiscoverBackend() {
-      const candidateEndpoints = [
-        'http://localhost:5000/api',
-        'http://127.0.0.1:5000/api',
-        '/api',
-      ];
-
-      for (const ep of candidateEndpoints) {
-        try {
-          const res = await fetch(`${ep}/data`);
-          if (res.ok) {
-            const apiData = await res.json();
-            setData(apiData);
-            setIsDbConnected(true);
-            setActiveApiUrl(ep);
-            console.log('⚡ Auto-connected to MySQL API server at:', ep);
-            return;
-          }
-        } catch (err) {
-          // ignore & try next
-        }
-      }
-      setIsDbConnected(false);
-    }
-    autoDiscoverBackend();
   }, []);
 
-  // Save to localStorage as fallback whenever data changes
+  // Fetch the latest data.json from GitHub (public read — no auth needed)
+  useEffect(() => {
+    async function fetchFromGitHub() {
+      try {
+        // Use the API endpoint to also get the SHA (needed for commits)
+        const res = await fetch(RAW_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const remoteData = await res.json();
+        setData(remoteData);
+        setIsDbConnected(true);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData));
+        console.log('⚡ Loaded data from GitHub repo');
+
+        // Also get the SHA for future commits
+        if (githubToken) {
+          try {
+            const metaRes = await fetch(API_URL, {
+              headers: { Authorization: `token ${githubToken}` },
+            });
+            if (metaRes.ok) {
+              const meta = await metaRes.json();
+              fileShaRef.current = meta.sha;
+            }
+          } catch (e) {
+            // SHA fetch failed — will retry on first commit
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch from GitHub, using localStorage fallback:', err.message);
+        setIsDbConnected(false);
+      }
+    }
+    fetchFromGitHub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Commit data.json to GitHub via the Contents API (debounced)
+  const commitToGitHub = useCallback(async (newData) => {
+    const token = localStorage.getItem(GH_TOKEN_KEY);
+    if (!token) {
+      console.warn('No GitHub token — skipping cloud sync');
+      return false;
+    }
+
+    try {
+      // Get current SHA if we don't have it
+      if (!fileShaRef.current) {
+        const metaRes = await fetch(API_URL, {
+          headers: { Authorization: `token ${token}` },
+        });
+        if (metaRes.ok) {
+          const meta = await metaRes.json();
+          fileShaRef.current = meta.sha;
+        } else {
+          console.error('Failed to get file SHA from GitHub');
+          return false;
+        }
+      }
+
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2))));
+
+      const res = await fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: `Update site data — ${new Date().toISOString()}`,
+          content,
+          sha: fileShaRef.current,
+          branch: GH_BRANCH,
+        }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        fileShaRef.current = result.content.sha;
+        setIsDbConnected(true);
+        console.log('✅ Data committed to GitHub');
+        return true;
+      } else {
+        const err = await res.json();
+        console.error('❌ GitHub commit failed:', err.message);
+        // If SHA conflict, refetch it
+        if (res.status === 409 || (err.message && err.message.includes('sha'))) {
+          fileShaRef.current = null;
+        }
+        return false;
+      }
+    } catch (err) {
+      console.error('❌ GitHub commit error:', err);
+      return false;
+    }
+  }, []);
+
+  // Save to localStorage immediately + debounced GitHub commit
   useEffect(() => {
     setSaving(true);
-    const t = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (e) {
-        console.error('Could not save changes locally', e);
-      }
+
+    // Save to localStorage right away (instant)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error('Could not save changes locally', e);
+    }
+
+    // Debounce GitHub commits (wait 2s after last change)
+    if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    commitTimerRef.current = setTimeout(async () => {
+      await commitToGitHub(data);
       setSaving(false);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [data]);
+    }, 2000);
+
+    return () => {
+      if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    };
+  }, [data, commitToGitHub]);
 
   const login = useCallback((password) => {
     if (password === ADMIN_PASSWORD) {
@@ -115,59 +183,39 @@ export function DataProvider({ children }) {
   }, []);
 
   const updateSite = useCallback((patch) => {
-    setData((d) => {
-      const nextSite = { ...d.site, ...patch };
-      syncApi('/site', 'POST', nextSite);
-      return { ...d, site: nextSite };
-    });
-  }, [syncApi]);
+    setData((d) => ({ ...d, site: { ...d.site, ...patch } }));
+  }, []);
 
   const addItem = useCallback((collection, item, prefix) => {
     const withId = { id: item.id || uid(prefix || collection), ...item };
-    setData((d) => {
-      const updatedList = [...(d[collection] || []), withId];
-      if (['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
-        syncApi(`/${collection}`, 'POST', withId);
-      }
-      return { ...d, [collection]: updatedList };
-    });
+    setData((d) => ({
+      ...d,
+      [collection]: [...(d[collection] || []), withId],
+    }));
     return withId.id;
-  }, [syncApi]);
+  }, []);
 
   const updateItem = useCallback((collection, id, patch) => {
-    setData((d) => {
-      const updatedList = (d[collection] || []).map((it) => (it.id === id ? { ...it, ...patch } : it));
-      const targetItem = updatedList.find((it) => it.id === id);
-      if (targetItem && ['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
-        syncApi(`/${collection}`, 'POST', targetItem);
-      }
-      return { ...d, [collection]: updatedList };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      [collection]: (d[collection] || []).map((it) => (it.id === id ? { ...it, ...patch } : it)),
+    }));
+  }, []);
 
   const removeItem = useCallback((collection, id) => {
-    setData((d) => {
-      if (['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
-        syncApi(`/${collection}/${id}`, 'DELETE');
-      }
-      return {
-        ...d,
-        [collection]: (d[collection] || []).filter((it) => it.id !== id),
-      };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      [collection]: (d[collection] || []).filter((it) => it.id !== id),
+    }));
+  }, []);
 
   const reorderCollection = useCallback((collection, items) => {
     setData((d) => ({ ...d, [collection]: items }));
   }, []);
 
   const updateProgress = useCallback((patch) => {
-    setData((d) => {
-      const nextProgress = { ...d.progress, ...patch };
-      syncApi('/progress', 'POST', nextProgress);
-      return { ...d, progress: nextProgress };
-    });
-  }, [syncApi]);
+    setData((d) => ({ ...d, progress: { ...d.progress, ...patch } }));
+  }, []);
 
   const resetToDefaults = useCallback(() => {
     setData(seedData);
@@ -185,93 +233,74 @@ export function DataProvider({ children }) {
   }, [data?.theme]);
 
   const updateTheme = useCallback((patch) => {
-    setData((d) => {
-      const nextTheme = { ...(d.theme || seedData.theme), ...patch };
-      syncApi('/theme', 'POST', nextTheme);
-      return { ...d, theme: nextTheme };
-    });
-  }, [syncApi]);
+    setData((d) => ({ ...d, theme: { ...(d.theme || seedData.theme), ...patch } }));
+  }, []);
 
   const updateLayout = useCallback((layoutArray) => {
-    setData((d) => {
-      const nextTheme = { ...(d.theme || seedData.theme), layout: layoutArray };
-      syncApi('/layout', 'POST', { layout: layoutArray });
-      return { ...d, theme: nextTheme };
-    });
-  }, [syncApi]);
+    setData((d) => ({ ...d, theme: { ...(d.theme || seedData.theme), layout: layoutArray } }));
+  }, []);
 
   const updateTeamSettings = useCallback((patch) => {
-    setData((d) => {
-      const nextTeam = { ...(d.team || seedData.team), ...patch };
-      syncApi('/team', 'POST', nextTeam);
-      return { ...d, team: nextTeam };
-    });
-  }, [syncApi]);
+    setData((d) => ({ ...d, team: { ...(d.team || seedData.team), ...patch } }));
+  }, []);
 
   const addTeamMember = useCallback((member) => {
     const withId = { id: member.id || uid('tm'), ...member };
-    setData((d) => {
-      const currentMembers = d.team?.members || [];
-      const updatedMembers = [...currentMembers, withId];
-      syncApi('/team/members', 'POST', withId);
-      return { ...d, team: { ...d.team, members: updatedMembers } };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      team: { ...d.team, members: [...(d.team?.members || []), withId] },
+    }));
+  }, []);
 
   const updateTeamMember = useCallback((id, patch) => {
-    setData((d) => {
-      const currentMembers = d.team?.members || [];
-      const updatedMembers = currentMembers.map((m) => (m.id === id ? { ...m, ...patch } : m));
-      const target = updatedMembers.find((m) => m.id === id);
-      if (target) {
-        syncApi('/team/members', 'POST', target);
-      }
-      return { ...d, team: { ...d.team, members: updatedMembers } };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      team: {
+        ...d.team,
+        members: (d.team?.members || []).map((m) => (m.id === id ? { ...m, ...patch } : m)),
+      },
+    }));
+  }, []);
 
   const removeTeamMember = useCallback((id) => {
-    setData((d) => {
-      const currentMembers = d.team?.members || [];
-      const updatedMembers = currentMembers.filter((m) => m.id !== id);
-      syncApi(`/team/members/${id}`, 'DELETE');
-      return { ...d, team: { ...d.team, members: updatedMembers } };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      team: {
+        ...d.team,
+        members: (d.team?.members || []).filter((m) => m.id !== id),
+      },
+    }));
+  }, []);
 
   const addCustomContainer = useCallback((container) => {
     const withId = { id: container.id || uid('cc'), ...container };
-    setData((d) => {
-      const updated = [...(d.customContainers || []), withId];
-      syncApi('/containers', 'POST', withId);
-      return { ...d, customContainers: updated };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      customContainers: [...(d.customContainers || []), withId],
+    }));
+  }, []);
 
   const updateCustomContainer = useCallback((id, patch) => {
-    setData((d) => {
-      const updated = (d.customContainers || []).map((c) => (c.id === id ? { ...c, ...patch } : c));
-      const target = updated.find((c) => c.id === id);
-      if (target) {
-        syncApi('/containers', 'POST', target);
-      }
-      return { ...d, customContainers: updated };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      customContainers: (d.customContainers || []).map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    }));
+  }, []);
 
   const removeCustomContainer = useCallback((id) => {
-    setData((d) => {
-      const updated = (d.customContainers || []).filter((c) => c.id !== id);
-      syncApi(`/containers/${id}`, 'DELETE');
-      return { ...d, customContainers: updated };
-    });
-  }, [syncApi]);
+    setData((d) => ({
+      ...d,
+      customContainers: (d.customContainers || []).filter((c) => c.id !== id),
+    }));
+  }, []);
 
   const value = {
     data,
     isAdmin,
     saving,
     isDbConnected,
+    githubToken,
+    setGithubToken,
     login,
     logout,
     updateSite,
@@ -300,4 +329,3 @@ export function useAcademy() {
   if (!ctx) throw new Error('useAcademy must be used inside a DataProvider');
   return ctx;
 }
-

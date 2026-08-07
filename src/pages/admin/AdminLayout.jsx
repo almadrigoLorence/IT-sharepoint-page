@@ -16,7 +16,7 @@ const sections = [
 ];
 
 export default function AdminLayout() {
-  const { logout, saving, isDbConnected } = useAcademy();
+  const { logout, saving, isDbConnected, githubToken } = useAcademy();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -49,8 +49,10 @@ export default function AdminLayout() {
             className={`db-status-badge ${isDbConnected ? 'connected' : 'offline'}`}
             title={
               isDbConnected
-                ? 'Connected to XAMPP MySQL via Express API server'
-                : 'Using browser storage — start the Express server and XAMPP to sync with MySQL'
+                ? 'Connected — changes sync to GitHub repo'
+                : githubToken
+                  ? 'GitHub token set but not connected yet'
+                  : 'Browser storage only — set a GitHub token in Site & Home to enable cloud sync'
             }
             style={{
               padding: '6px 10px',
@@ -66,7 +68,7 @@ export default function AdminLayout() {
             }}
           >
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: isDbConnected ? '#22c55e' : '#f59e0b' }} />
-            {isDbConnected ? 'MySQL Connected' : 'Browser Storage'}
+            {isDbConnected ? '☁️ GitHub Synced' : '💾 Browser Storage'}
           </div>
 
           <span className={`saving-dot ${saving ? 'is-saving' : ''}`}>

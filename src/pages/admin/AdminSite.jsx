@@ -5,13 +5,23 @@ import './AdminLayout.css';
 import './admin-shared.css';
 
 export default function AdminSite() {
-  const { data, updateSite, addItem, updateItem, removeItem } = useAcademy();
+  const { data, updateSite, addItem, updateItem, removeItem, githubToken, setGithubToken, isDbConnected } = useAcademy();
   const [siteForm, setSiteForm] = useState(data.site);
   const [savedSite, setSavedSite] = useState(false);
+  const [tokenInput, setTokenInput] = useState(githubToken);
+  const [tokenSaved, setTokenSaved] = useState(false);
+  const [showToken, setShowToken] = useState(false);
   const [newLink, setNewLink] = useState({ label: '', to: '', description: '' });
   const [newNews, setNewNews] = useState({ title: '', body: '', tag: 'New course', date: new Date().toISOString().slice(0, 10) });
   const [editingNewsId, setEditingNewsId] = useState(null);
   const [editingLinkId, setEditingLinkId] = useState(null);
+
+  function saveToken(e) {
+    e.preventDefault();
+    setGithubToken(tokenInput);
+    setTokenSaved(true);
+    setTimeout(() => setTokenSaved(false), 2500);
+  }
 
   function saveSite(e) {
     e.preventDefault();
@@ -43,6 +53,69 @@ export default function AdminSite() {
           <p>Controls the hero banner, quick links, and news feed shown on the home page.</p>
         </div>
       </div>
+
+      {/* GitHub Cloud Sync Panel */}
+      <form className="admin-panel mb-6" onSubmit={saveToken}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h2>☁️ GitHub Cloud Sync</h2>
+          <span
+            style={{
+              padding: '6px 14px',
+              borderRadius: '9999px',
+              fontSize: '12px',
+              fontWeight: 700,
+              background: isDbConnected ? '#dcfce7' : githubToken ? '#fef3c7' : '#f1f5f9',
+              color: isDbConnected ? '#15803d' : githubToken ? '#b45309' : '#64748b',
+              border: `1px solid ${isDbConnected ? '#bbf7d0' : githubToken ? '#fde68a' : '#e2e8f0'}`,
+            }}
+          >
+            {isDbConnected ? '⚡ Syncing to GitHub' : githubToken ? '⏳ Connecting…' : '🔒 Token Required'}
+          </span>
+        </div>
+
+        <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '1rem', lineHeight: 1.6 }}>
+          Your data is saved to <code>db/data.json</code> in your GitHub repo. To enable cloud sync (so changes persist across devices), paste a <strong>GitHub Personal Access Token</strong> below.<br />
+          <a href="https://github.com/settings/tokens/new?scopes=repo&description=IT-SharePoint-Academy" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
+            → Create a token here (select "repo" scope)
+          </a>
+        </p>
+
+        <div className="field">
+          <label>GitHub Personal Access Token (stored in browser only)</label>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <input
+              type={showToken ? 'text' : 'password'}
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              style={{ flex: 1, fontFamily: 'monospace' }}
+            />
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowToken(!showToken)}>
+              {showToken ? '🙈 Hide' : '👁 Show'}
+            </Button>
+            <Button type="submit" variant="primary">
+              {tokenSaved ? 'Saved ✓' : 'Save Token'}
+            </Button>
+            {githubToken && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setTokenInput('');
+                  setGithubToken('');
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+        {!githubToken && (
+          <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+            Without a token, your changes are saved to <strong>browser storage only</strong> (this device only).
+          </p>
+        )}
+      </form>
 
       <form className="admin-panel mb-6" onSubmit={saveSite}>
         <h2>Hero banner</h2>
