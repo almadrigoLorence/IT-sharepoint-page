@@ -26,7 +26,27 @@ export function DataProvider({ children }) {
   const [saving, setSaving] = useState(false);
   const [isDbConnected, setIsDbConnected] = useState(false);
 
-  // Attempt to fetch data from Express/MySQL API server on load
+  // Helper function to sync with MySQL API
+  const syncApi = useCallback(async (endpoint, method, payload) => {
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: payload ? JSON.stringify(payload) : undefined,
+      });
+      if (res.ok) {
+        setIsDbConnected(true);
+        console.log(`⚡ MySQL API sync success: ${method} ${endpoint}`);
+        return true;
+      }
+    } catch (err) {
+      console.warn(`MySQL API sync failed (${method} ${endpoint}):`, err.message);
+      setIsDbConnected(false);
+    }
+    return false;
+  }, []);
+
+  // Attempt to fetch data from Express/MySQL API server on load and poll health
   useEffect(() => {
     async function fetchFromApi() {
       try {
@@ -38,7 +58,7 @@ export function DataProvider({ children }) {
           console.log('⚡ Connected to SharePoint Academy MySQL API server');
         }
       } catch (err) {
-        console.warn('MySQL API server offline. Using local browser state.', err);
+        console.warn('MySQL API server offline or blocked. Using local browser state.', err.message);
         setIsDbConnected(false);
       }
     }
@@ -76,61 +96,45 @@ export function DataProvider({ children }) {
   const updateSite = useCallback((patch) => {
     setData((d) => {
       const nextSite = { ...d.site, ...patch };
-      if (isDbConnected) {
-        fetch(`${API_URL}/site`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(nextSite),
-        }).catch((err) => console.error('API sync error (site):', err));
-      }
+      syncApi('/site', 'POST', nextSite);
       return { ...d, site: nextSite };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const addItem = useCallback((collection, item, prefix) => {
     const withId = { id: item.id || uid(prefix || collection), ...item };
     setData((d) => {
       const updatedList = [...(d[collection] || []), withId];
-      if (isDbConnected && ['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
-        fetch(`${API_URL}/${collection}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(withId),
-        }).catch((err) => console.error(`API sync error (add ${collection}):`, err));
+      if (['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
+        syncApi(`/${collection}`, 'POST', withId);
       }
       return { ...d, [collection]: updatedList };
     });
     return withId.id;
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const updateItem = useCallback((collection, id, patch) => {
     setData((d) => {
       const updatedList = (d[collection] || []).map((it) => (it.id === id ? { ...it, ...patch } : it));
       const targetItem = updatedList.find((it) => it.id === id);
-      if (isDbConnected && targetItem && ['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
-        fetch(`${API_URL}/${collection}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(targetItem),
-        }).catch((err) => console.error(`API sync error (update ${collection}):`, err));
+      if (targetItem && ['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
+        syncApi(`/${collection}`, 'POST', targetItem);
       }
       return { ...d, [collection]: updatedList };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const removeItem = useCallback((collection, id) => {
     setData((d) => {
-      if (isDbConnected && ['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
-        fetch(`${API_URL}/${collection}/${id}`, {
-          method: 'DELETE',
-        }).catch((err) => console.error(`API sync error (delete ${collection}):`, err));
+      if (['courses', 'paths', 'resources', 'events', 'news'].includes(collection)) {
+        syncApi(`/${collection}/${id}`, 'DELETE');
       }
       return {
         ...d,
         [collection]: (d[collection] || []).filter((it) => it.id !== id),
       };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const reorderCollection = useCallback((collection, items) => {
     setData((d) => ({ ...d, [collection]: items }));
@@ -139,16 +143,10 @@ export function DataProvider({ children }) {
   const updateProgress = useCallback((patch) => {
     setData((d) => {
       const nextProgress = { ...d.progress, ...patch };
-      if (isDbConnected) {
-        fetch(`${API_URL}/progress`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(nextProgress),
-        }).catch((err) => console.error('API sync error (progress):', err));
-      }
+      syncApi('/progress', 'POST', nextProgress);
       return { ...d, progress: nextProgress };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const resetToDefaults = useCallback(() => {
     setData(seedData);
@@ -168,131 +166,85 @@ export function DataProvider({ children }) {
   const updateTheme = useCallback((patch) => {
     setData((d) => {
       const nextTheme = { ...(d.theme || seedData.theme), ...patch };
-      if (isDbConnected) {
-        fetch(`${API_URL}/theme`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(nextTheme),
-        }).catch((err) => console.error('API sync error (theme):', err));
-      }
+      syncApi('/theme', 'POST', nextTheme);
       return { ...d, theme: nextTheme };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const updateLayout = useCallback((layoutArray) => {
     setData((d) => {
       const nextTheme = { ...(d.theme || seedData.theme), layout: layoutArray };
-      if (isDbConnected) {
-        fetch(`${API_URL}/layout`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ layout: layoutArray }),
-        }).catch((err) => console.error('API sync error (layout):', err));
-      }
+      syncApi('/layout', 'POST', { layout: layoutArray });
       return { ...d, theme: nextTheme };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const updateTeamSettings = useCallback((patch) => {
     setData((d) => {
       const nextTeam = { ...(d.team || seedData.team), ...patch };
-      if (isDbConnected) {
-        fetch(`${API_URL}/team`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(nextTeam),
-        }).catch((err) => console.error('API sync error (team):', err));
-      }
+      syncApi('/team', 'POST', nextTeam);
       return { ...d, team: nextTeam };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const addTeamMember = useCallback((member) => {
     const withId = { id: member.id || uid('tm'), ...member };
     setData((d) => {
       const currentMembers = d.team?.members || [];
       const updatedMembers = [...currentMembers, withId];
-      if (isDbConnected) {
-        fetch(`${API_URL}/team/members`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(withId),
-        }).catch((err) => console.error('API sync error (add team member):', err));
-      }
+      syncApi('/team/members', 'POST', withId);
       return { ...d, team: { ...d.team, members: updatedMembers } };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const updateTeamMember = useCallback((id, patch) => {
     setData((d) => {
       const currentMembers = d.team?.members || [];
       const updatedMembers = currentMembers.map((m) => (m.id === id ? { ...m, ...patch } : m));
       const target = updatedMembers.find((m) => m.id === id);
-      if (isDbConnected && target) {
-        fetch(`${API_URL}/team/members`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(target),
-        }).catch((err) => console.error('API sync error (update team member):', err));
+      if (target) {
+        syncApi('/team/members', 'POST', target);
       }
       return { ...d, team: { ...d.team, members: updatedMembers } };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const removeTeamMember = useCallback((id) => {
     setData((d) => {
       const currentMembers = d.team?.members || [];
       const updatedMembers = currentMembers.filter((m) => m.id !== id);
-      if (isDbConnected) {
-        fetch(`${API_URL}/team/members/${id}`, {
-          method: 'DELETE',
-        }).catch((err) => console.error('API sync error (delete team member):', err));
-      }
+      syncApi(`/team/members/${id}`, 'DELETE');
       return { ...d, team: { ...d.team, members: updatedMembers } };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const addCustomContainer = useCallback((container) => {
     const withId = { id: container.id || uid('cc'), ...container };
     setData((d) => {
       const updated = [...(d.customContainers || []), withId];
-      if (isDbConnected) {
-        fetch(`${API_URL}/containers`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(withId),
-        }).catch((err) => console.error('API sync error (add container):', err));
-      }
+      syncApi('/containers', 'POST', withId);
       return { ...d, customContainers: updated };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const updateCustomContainer = useCallback((id, patch) => {
     setData((d) => {
       const updated = (d.customContainers || []).map((c) => (c.id === id ? { ...c, ...patch } : c));
       const target = updated.find((c) => c.id === id);
-      if (isDbConnected && target) {
-        fetch(`${API_URL}/containers`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(target),
-        }).catch((err) => console.error('API sync error (update container):', err));
+      if (target) {
+        syncApi('/containers', 'POST', target);
       }
       return { ...d, customContainers: updated };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const removeCustomContainer = useCallback((id) => {
     setData((d) => {
       const updated = (d.customContainers || []).filter((c) => c.id !== id);
-      if (isDbConnected) {
-        fetch(`${API_URL}/containers/${id}`, {
-          method: 'DELETE',
-        }).catch((err) => console.error('API sync error (delete container):', err));
-      }
+      syncApi(`/containers/${id}`, 'DELETE');
       return { ...d, customContainers: updated };
     });
-  }, [isDbConnected]);
+  }, [syncApi]);
 
   const value = {
     data,

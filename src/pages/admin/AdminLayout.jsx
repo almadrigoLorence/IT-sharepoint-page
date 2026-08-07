@@ -16,7 +16,7 @@ const sections = [
 ];
 
 export default function AdminLayout() {
-  const { logout, saving } = useAcademy();
+  const { logout, saving, isDbConnected } = useAcademy();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -45,6 +45,30 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div className="admin-sidebar-foot">
+          <div
+            className={`db-status-badge ${isDbConnected ? 'connected' : 'offline'}`}
+            title={
+              isDbConnected
+                ? 'Connected to local XAMPP MySQL database (http://localhost:5000)'
+                : 'Offline / Browser Storage Mode (GitHub Pages cannot access local HTTP database due to HTTPS mixed content rule. Use http://localhost:5173 for database sync)'
+            }
+            style={{
+              padding: '6px 10px',
+              borderRadius: '8px',
+              fontSize: '11px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: isDbConnected ? '#dcfce7' : '#fef3c7',
+              color: isDbConnected ? '#15803d' : '#b45309',
+              border: `1px solid ${isDbConnected ? '#bbf7d0' : '#fde68a'}`,
+            }}
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: isDbConnected ? '#22c55e' : '#f59e0b' }} />
+            {isDbConnected ? 'MySQL Connected' : 'Browser Storage (GitHub Pages)'}
+          </div>
+
           <span className={`saving-dot ${saving ? 'is-saving' : ''}`}>
             <span className="dot" />
             {saving ? 'Saving…' : 'All changes saved'}
