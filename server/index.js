@@ -44,6 +44,16 @@ app.get('/api/data', async (req, res) => {
     const [resources] = await pool.query('SELECT id, name, type, course, owner, DATE_FORMAT(reviewDate, "%Y-%m-%d") as reviewDate FROM resources');
     const [events] = await pool.query('SELECT id, title, DATE_FORMAT(date, "%Y-%m-%d") as date, time, venue, seats FROM events');
     const [[progressRow]] = await pool.query('SELECT learner, path_title, path_percent, completions_json FROM learner_progress LIMIT 1');
+    
+    // Team & Theme queries
+    let teamRow, teamMembers = [], themeRow;
+    try {
+      [[teamRow]] = await pool.query('SELECT title, description FROM team_settings LIMIT 1');
+      [teamMembers] = await pool.query('SELECT id, name, role, avatar, bio, sort_order FROM team_members ORDER BY sort_order ASC');
+      [[themeRow]] = await pool.query('SELECT * FROM theme_settings LIMIT 1');
+    } catch (e) {
+      console.warn('Optional team/theme tables not initialized yet:', e.message);
+    }
 
     const courses = coursesRows.map((c) => ({
       ...c,
@@ -68,6 +78,34 @@ app.get('/api/data', async (req, res) => {
         : [],
     };
 
+    const team = {
+      title: teamRow?.title || 'Meet Our IT & Engineering Team',
+      description: teamRow?.description || 'The dedicated experts leading reliability, training, cloud architecture, and compliance across ASEPH.',
+      members: teamMembers.length > 0 ? teamMembers : [
+        { id: 'tm1', name: 'J. Ramirez', role: 'Lead Reliability Engineer & Trainer', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80', bio: 'Specializes in TCT, HAST testing standards, and compliance training.' },
+        { id: 'tm2', name: 'M. Santos', role: 'Senior Systems Architect', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80', bio: 'Leads SharePoint tenant governance, security policies, and infrastructure.' },
+        { id: 'tm3', name: 'A. Dela Peña', role: 'Data Analytics Specialist', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80', bio: 'Drives Power BI dashboards, automated lab reporting, and Excel data models.' },
+      ],
+    };
+
+    const theme = {
+      primaryColor: themeRow?.primaryColor || '#0078d4',
+      secondaryColor: themeRow?.secondaryColor || '#107c41',
+      bgColor: themeRow?.bgColor || '#0b0f19',
+      cardBg: themeRow?.cardBg || '#161e2e',
+      textColor: themeRow?.textColor || '#f3f4f6',
+      headerTitle: themeRow?.headerTitle || 'ASEPH Academy',
+      carousel: themeRow?.carousel_json
+        ? (typeof themeRow.carousel_json === 'string' ? JSON.parse(themeRow.carousel_json) : themeRow.carousel_json)
+        : [
+            { id: 'slide1', title: 'SharePoint & IT Training Hub', subtitle: 'Accelerate your technical mastery in security, reliability, and enterprise tools.', image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&auto=format&fit=crop&q=80', buttonText: 'Explore Courses', buttonUrl: '/catalog' },
+            { id: 'slide2', title: 'Interactive Learning Paths', subtitle: 'Structured step-by-step career development tracks for engineers and technicians.', image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80', buttonText: 'View Paths', buttonUrl: '/paths' }
+          ],
+      layout: themeRow?.layout_json
+        ? (typeof themeRow.layout_json === 'string' ? JSON.parse(themeRow.layout_json) : themeRow.layout_json)
+        : ['carousel', 'quickLinks', 'news', 'team', 'courses', 'resources', 'events', 'progress']
+    };
+
     res.json({
       site: siteRow || {
         name: 'SharePoint Academy',
@@ -82,6 +120,8 @@ app.get('/api/data', async (req, res) => {
       resources,
       events,
       progress,
+      team,
+      theme,
     });
   } catch (err) {
     console.error('Error fetching data from MySQL:', err);
@@ -254,7 +294,88 @@ app.post('/api/progress', async (req, res) => {
   }
 });
 
+// TEAM SETTINGS & MEMBERS API
+app.post('/api/team', async (req, res) => {
+  const { title, description } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO team_settings (id, title, description) VALUES (1, ?, ?)
+       ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description)`,
+      [title, description]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/team/members', async (req, res) => {
+  const m = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO team_members (id, name, role, avatar, bio, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE name=VALUES(name), role=VALUES(role), avatar=VALUES(avatar), bio=VALUES(bio), sort_order=VALUES(sort_order)`,
+      [m.id, m.name, m.role, m.avatar, m.bio || '', m.sort_order || 0]
+    );
+    res.json({ success: true, id: m.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/team/members/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM team_members WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// THEME & LAYOUT API
+app.post('/api/theme', async (req, res) => {
+  const t = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO theme_settings (id, primaryColor, secondaryColor, bgColor, cardBg, textColor, headerTitle, carousel_json, layout_json)
+       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+       primaryColor=VALUES(primaryColor), secondaryColor=VALUES(secondaryColor), bgColor=VALUES(bgColor),
+       cardBg=VALUES(cardBg), textColor=VALUES(textColor), headerTitle=VALUES(headerTitle),
+       carousel_json=VALUES(carousel_json), layout_json=VALUES(layout_json)`,
+      [
+        t.primaryColor || '#0078d4',
+        t.secondaryColor || '#107c41',
+        t.bgColor || '#0b0f19',
+        t.cardBg || '#161e2e',
+        t.textColor || '#f3f4f6',
+        t.headerTitle || 'ASEPH Academy',
+        JSON.stringify(t.carousel || []),
+        JSON.stringify(t.layout || []),
+      ]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/layout', async (req, res) => {
+  const { layout } = req.body;
+  try {
+    await pool.query(
+      `UPDATE theme_settings SET layout_json = ? WHERE id = 1`,
+      [JSON.stringify(layout || [])]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 SharePoint Academy API server running on http://localhost:${PORT}`);
 });
+
 

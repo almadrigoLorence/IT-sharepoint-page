@@ -158,3 +158,57 @@ CREATE TABLE `learner_progress` (
 
 INSERT INTO `learner_progress` (`id`, `learner`, `path_title`, `path_percent`, `completions_json`) VALUES
 (1, 'You', 'Lab Technician', 60, '[{"id": "c1", "course": "TCT Basics", "status": "Completed", "score": 90, "date": "2026-07-10"}, {"id": "c2", "course": "Excel for Labs", "status": "Completed", "score": 85, "date": "2026-06-28"}, {"id": "c3", "course": "HAST Deep Dive", "status": "In progress", "score": null, "date": null}]');
+
+-- --------------------------------------------------------
+-- Table: team_settings
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `team_settings`;
+CREATE TABLE `team_settings` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `team_settings` (`id`, `title`, `description`) VALUES
+(1, 'Meet Our IT & Engineering Team', 'The dedicated experts leading reliability, training, cloud architecture, and compliance across ASEPH.');
+
+-- --------------------------------------------------------
+-- Table: team_members
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `team_members`;
+CREATE TABLE `team_members` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `role` VARCHAR(255) NOT NULL,
+  `avatar` LONGTEXT,
+  `bio` TEXT,
+  `sort_order` INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `team_members` (`id`, `name`, `role`, `avatar`, `bio`, `sort_order`) VALUES
+('tm1', 'J. Ramirez', 'Lead Reliability Engineer & Trainer', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80', 'Specializes in TCT, HAST testing standards, and compliance training.', 1),
+('tm2', 'M. Santos', 'Senior Systems Architect', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80', 'Leads SharePoint tenant governance, security policies, and infrastructure.', 2),
+('tm3', 'A. Dela Peña', 'Data Analytics Specialist', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80', 'Drives Power BI dashboards, automated lab reporting, and Excel data models.', 3),
+('tm4', 'R. Cruz', 'Metrology & Calibration Lead', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80', 'Oversees equipment metrology, calibration workflows, and 5S standards.', 4);
+
+-- --------------------------------------------------------
+-- Table: theme_settings
+-- --------------------------------------------------------
+DROP TABLE IF EXISTS `theme_settings`;
+CREATE TABLE `theme_settings` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `primaryColor` VARCHAR(50) NOT NULL DEFAULT '#0078d4',
+  `secondaryColor` VARCHAR(50) NOT NULL DEFAULT '#107c41',
+  `bgColor` VARCHAR(50) NOT NULL DEFAULT '#0b0f19',
+  `cardBg` VARCHAR(50) NOT NULL DEFAULT '#161e2e',
+  `textColor` VARCHAR(50) NOT NULL DEFAULT '#f3f4f6',
+  `headerTitle` VARCHAR(255) NOT NULL DEFAULT 'ASEPH Academy',
+  `carousel_json` JSON,
+  `layout_json` JSON
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `theme_settings` (`id`, `primaryColor`, `secondaryColor`, `bgColor`, `cardBg`, `textColor`, `headerTitle`, `carousel_json`, `layout_json`) VALUES
+(1, '#0078d4', '#107c41', '#0b0f19', '#161e2e', '#f3f4f6', 'ASEPH Academy', 
+ '[{"id":"slide1","title":"SharePoint & IT Training Hub","subtitle":"Accelerate your technical mastery in security, reliability, and enterprise tools.","image":"https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&auto=format&fit=crop&q=80","buttonText":"Explore Courses","buttonUrl":"/catalog"},{"id":"slide2","title":"Interactive Learning Paths","subtitle":"Structured step-by-step career development tracks for engineers and technicians.","image":"https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80","buttonText":"View Paths","buttonUrl":"/paths"}]',
+ '["carousel","quickLinks","news","team","courses","resources","events","progress"]');
+

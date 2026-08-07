@@ -24,7 +24,7 @@ export default function Navbar() {
               <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z" />
             </svg>
           </div>
-          <span className="navbar-brand-title">{data.site.name || 'SharePoint Academy'}</span>
+          <span className="navbar-brand-title">{data?.theme?.headerTitle || data?.site?.name || 'SharePoint Academy'}</span>
           <span className="navbar-dept-tag">IT DEPARTMENT</span>
         </Link>
 

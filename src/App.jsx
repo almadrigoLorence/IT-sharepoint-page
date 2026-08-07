@@ -15,6 +15,9 @@ import AdminLogin from './pages/AdminLogin.jsx';
 
 import AdminLayout from './pages/admin/AdminLayout.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
+import AdminTheme from './pages/admin/AdminTheme.jsx';
+import AdminLayoutCustomizer from './pages/admin/AdminLayoutCustomizer.jsx';
+import AdminTeam from './pages/admin/AdminTeam.jsx';
 import AdminSite from './pages/admin/AdminSite.jsx';
 import AdminCourses from './pages/admin/AdminCourses.jsx';
 import AdminPaths from './pages/admin/AdminPaths.jsx';
@@ -56,6 +59,9 @@ export default function App() {
             }
           >
             <Route index element={<AdminOverview />} />
+            <Route path="theme" element={<AdminTheme />} />
+            <Route path="layout" element={<AdminLayoutCustomizer />} />
+            <Route path="team" element={<AdminTeam />} />
             <Route path="site" element={<AdminSite />} />
             <Route path="courses" element={<AdminCourses />} />
             <Route path="paths" element={<AdminPaths />} />

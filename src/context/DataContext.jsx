@@ -154,6 +154,104 @@ export function DataProvider({ children }) {
     setData(seedData);
   }, []);
 
+  // Apply Theme CSS variables dynamically to document element
+  useEffect(() => {
+    if (!data?.theme) return;
+    const root = document.documentElement;
+    if (data.theme.primaryColor) root.style.setProperty('--brand', data.theme.primaryColor);
+    if (data.theme.secondaryColor) root.style.setProperty('--brand-secondary', data.theme.secondaryColor);
+    if (data.theme.bgColor) root.style.setProperty('--bg-dark', data.theme.bgColor);
+    if (data.theme.cardBg) root.style.setProperty('--bg-card', data.theme.cardBg);
+    if (data.theme.textColor) root.style.setProperty('--text-main', data.theme.textColor);
+  }, [data?.theme]);
+
+  const updateTheme = useCallback((patch) => {
+    setData((d) => {
+      const nextTheme = { ...(d.theme || seedData.theme), ...patch };
+      if (isDbConnected) {
+        fetch(`${API_URL}/theme`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nextTheme),
+        }).catch((err) => console.error('API sync error (theme):', err));
+      }
+      return { ...d, theme: nextTheme };
+    });
+  }, [isDbConnected]);
+
+  const updateLayout = useCallback((layoutArray) => {
+    setData((d) => {
+      const nextTheme = { ...(d.theme || seedData.theme), layout: layoutArray };
+      if (isDbConnected) {
+        fetch(`${API_URL}/layout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ layout: layoutArray }),
+        }).catch((err) => console.error('API sync error (layout):', err));
+      }
+      return { ...d, theme: nextTheme };
+    });
+  }, [isDbConnected]);
+
+  const updateTeamSettings = useCallback((patch) => {
+    setData((d) => {
+      const nextTeam = { ...(d.team || seedData.team), ...patch };
+      if (isDbConnected) {
+        fetch(`${API_URL}/team`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nextTeam),
+        }).catch((err) => console.error('API sync error (team):', err));
+      }
+      return { ...d, team: nextTeam };
+    });
+  }, [isDbConnected]);
+
+  const addTeamMember = useCallback((member) => {
+    const withId = { id: member.id || uid('tm'), ...member };
+    setData((d) => {
+      const currentMembers = d.team?.members || [];
+      const updatedMembers = [...currentMembers, withId];
+      if (isDbConnected) {
+        fetch(`${API_URL}/team/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(withId),
+        }).catch((err) => console.error('API sync error (add team member):', err));
+      }
+      return { ...d, team: { ...d.team, members: updatedMembers } };
+    });
+  }, [isDbConnected]);
+
+  const updateTeamMember = useCallback((id, patch) => {
+    setData((d) => {
+      const currentMembers = d.team?.members || [];
+      const updatedMembers = currentMembers.map((m) => (m.id === id ? { ...m, ...patch } : m));
+      const target = updatedMembers.find((m) => m.id === id);
+      if (isDbConnected && target) {
+        fetch(`${API_URL}/team/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(target),
+        }).catch((err) => console.error('API sync error (update team member):', err));
+      }
+      return { ...d, team: { ...d.team, members: updatedMembers } };
+    });
+  }, [isDbConnected]);
+
+  const removeTeamMember = useCallback((id) => {
+    setData((d) => {
+      const currentMembers = d.team?.members || [];
+      const updatedMembers = currentMembers.filter((m) => m.id !== id);
+      if (isDbConnected) {
+        fetch(`${API_URL}/team/members/${id}`, {
+          method: 'DELETE',
+        }).catch((err) => console.error('API sync error (delete team member):', err));
+      }
+      return { ...d, team: { ...d.team, members: updatedMembers } };
+    });
+  }, [isDbConnected]);
+
   const value = {
     data,
     isAdmin,
@@ -168,6 +266,12 @@ export function DataProvider({ children }) {
     reorderCollection,
     updateProgress,
     resetToDefaults,
+    updateTheme,
+    updateLayout,
+    updateTeamSettings,
+    addTeamMember,
+    updateTeamMember,
+    removeTeamMember,
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
@@ -178,3 +282,4 @@ export function useAcademy() {
   if (!ctx) throw new Error('useAcademy must be used inside a DataProvider');
   return ctx;
 }
+

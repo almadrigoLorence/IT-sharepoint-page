@@ -4,6 +4,9 @@ import './AdminLayout.css';
 
 const sections = [
   { to: '/admin', label: 'Overview', end: true, icon: '◧' },
+  { to: '/admin/theme', label: 'Theme & Styling', icon: '🎨' },
+  { to: '/admin/layout', label: 'Page Layout', icon: '⇇' },
+  { to: '/admin/team', label: 'Team Members', icon: '👥' },
   { to: '/admin/site', label: 'Site & Home', icon: '⌂' },
   { to: '/admin/courses', label: 'Courses', icon: '▤' },
   { to: '/admin/paths', label: 'Learning Paths', icon: '⇥' },

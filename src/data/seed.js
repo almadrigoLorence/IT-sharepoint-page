@@ -10,6 +10,31 @@ export const seedData = {
     footerNote: 'ASEPH Learning Academy · an internal training hub',
   },
 
+  team: {
+    title: 'Meet Our IT & Engineering Team',
+    description: 'The dedicated experts leading reliability, training, cloud architecture, and compliance across ASEPH.',
+    members: [
+      { id: 'tm1', name: 'J. Ramirez', role: 'Lead Reliability Engineer & Trainer', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80', bio: 'Specializes in TCT, HAST testing standards, and compliance training.' },
+      { id: 'tm2', name: 'M. Santos', role: 'Senior Systems Architect', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80', bio: 'Leads SharePoint tenant governance, security policies, and infrastructure.' },
+      { id: 'tm3', name: 'A. Dela Peña', role: 'Data Analytics Specialist', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80', bio: 'Drives Power BI dashboards, automated lab reporting, and Excel data models.' },
+      { id: 'tm4', name: 'R. Cruz', role: 'Metrology & Calibration Lead', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80', bio: 'Oversees equipment metrology, calibration workflows, and 5S standards.' }
+    ],
+  },
+
+  theme: {
+    primaryColor: '#0078d4',
+    secondaryColor: '#107c41',
+    bgColor: '#0b0f19',
+    cardBg: '#161e2e',
+    textColor: '#f3f4f6',
+    headerTitle: 'ASEPH Academy',
+    carousel: [
+      { id: 'slide1', title: 'SharePoint & IT Training Hub', subtitle: 'Accelerate your technical mastery in security, reliability, and enterprise tools.', image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200&auto=format&fit=crop&q=80', buttonText: 'Explore Courses', buttonUrl: '/catalog' },
+      { id: 'slide2', title: 'Interactive Learning Paths', subtitle: 'Structured step-by-step career development tracks for engineers and technicians.', image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&auto=format&fit=crop&q=80', buttonText: 'View Paths', buttonUrl: '/paths' }
+    ],
+    layout: ['carousel', 'quickLinks', 'news', 'team', 'courses', 'resources', 'events', 'progress']
+  },
+
   quickLinks: [
     { id: 'ql1', label: 'New Hire?', to: '/paths', description: 'Start the onboarding path' },
     { id: 'ql2', label: 'Browse courses', to: '/catalog', description: 'See the full catalog' },
