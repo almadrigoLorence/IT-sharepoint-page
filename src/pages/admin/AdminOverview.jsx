@@ -6,9 +6,18 @@ import './AdminLayout.css';
 import './admin-shared.css';
 
 export default function AdminOverview() {
-  const { data, resetToDefaults } = useAcademy();
+  const { data, resetToDefaults, apiUrl, updateApiUrl, isDbConnected } = useAcademy();
   const [confirming, setConfirming] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [customApiInput, setCustomApiInput] = useState(apiUrl);
+  const [savedNotice, setSavedNotice] = useState(false);
+
+  function handleSaveApiUrl(e) {
+    e.preventDefault();
+    updateApiUrl(customApiInput);
+    setSavedNotice(true);
+    setTimeout(() => setSavedNotice(false), 2500);
+  }
 
   const stats = [
     { label: 'Courses', count: data.courses.length, to: '/admin/courses' },
@@ -37,6 +46,58 @@ export default function AdminOverview() {
           <p>Every page on the site reads from this content. Edit anything here and it updates live for learners.</p>
         </div>
       </div>
+
+      {/* Database Connection & API Server Endpoint Panel */}
+      <form className="admin-panel mb-6" onSubmit={handleSaveApiUrl} style={{ background: '#f8fafc', border: '2px solid #3b82f6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <h2 style={{ margin: 0, color: '#0f172a' }}>🌐 Database &amp; API Server Endpoint Settings</h2>
+          <span
+            style={{
+              padding: '6px 14px',
+              borderRadius: '9999px',
+              fontSize: '12px',
+              fontWeight: 700,
+              background: isDbConnected ? '#dcfce7' : '#fef3c7',
+              color: isDbConnected ? '#15803d' : '#b45309',
+              border: `1px solid ${isDbConnected ? '#bbf7d0' : '#fde68a'}`,
+            }}
+          >
+            {isDbConnected ? '⚡ MySQL Database Connected' : '⚠️ Browser Storage (GitHub Pages)'}
+          </span>
+        </div>
+
+        <p style={{ fontSize: '0.88rem', color: '#475569', marginBottom: '1.25rem', lineHeight: 1.6 }}>
+          To connect <strong>GitHub Pages (HTTPS)</strong> to your local XAMPP MySQL database:<br />
+          1. Run <code>npx localtunnel --port 5000</code> in your VS Code terminal.<br />
+          2. Copy the generated <code>https://...loca.lt</code> URL, append <code>/api</code> (e.g. <code>https://xxxxx.loca.lt/api</code>), and paste it below:
+        </p>
+
+        <div className="field" style={{ margin: 0 }}>
+          <label style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1e293b' }}>API Endpoint Server URL</label>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.35rem' }}>
+            <input
+              type="text"
+              value={customApiInput}
+              onChange={(e) => setCustomApiInput(e.target.value)}
+              placeholder="http://localhost:5000/api or https://xxxx.loca.lt/api"
+              style={{ flex: 1, padding: '0.65rem 0.9rem', borderRadius: '10px', border: '1px solid #cbd5e1' }}
+            />
+            <Button type="submit" variant="primary">
+              {savedNotice ? 'Connected ✓' : 'Connect API URL'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setCustomApiInput('http://localhost:5000/api');
+                updateApiUrl('http://localhost:5000/api');
+              }}
+            >
+              Reset Default
+            </Button>
+          </div>
+        </div>
+      </form>
 
       <div className="grid grid-3" style={{ marginBottom: 32 }}>
         {stats.map((s) => (
