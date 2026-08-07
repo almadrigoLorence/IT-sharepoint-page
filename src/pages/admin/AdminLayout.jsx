@@ -49,8 +49,8 @@ export default function AdminLayout() {
             className={`db-status-badge ${isDbConnected ? 'connected' : 'offline'}`}
             title={
               isDbConnected
-                ? 'Connected to local XAMPP MySQL database (http://localhost:5000)'
-                : 'Offline / Browser Storage Mode (GitHub Pages cannot access local HTTP database due to HTTPS mixed content rule. Use http://localhost:5173 for database sync)'
+                ? 'Connected to XAMPP MySQL via Express API server'
+                : 'Using browser storage — start the Express server and XAMPP to sync with MySQL'
             }
             style={{
               padding: '6px 10px',
@@ -66,7 +66,7 @@ export default function AdminLayout() {
             }}
           >
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: isDbConnected ? '#22c55e' : '#f59e0b' }} />
-            {isDbConnected ? 'MySQL Connected' : 'Browser Storage (GitHub Pages)'}
+            {isDbConnected ? 'MySQL Connected' : 'Browser Storage'}
           </div>
 
           <span className={`saving-dot ${saving ? 'is-saving' : ''}`}>

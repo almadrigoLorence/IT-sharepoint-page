@@ -5,22 +5,13 @@ import './AdminLayout.css';
 import './admin-shared.css';
 
 export default function AdminSite() {
-  const { data, updateSite, addItem, updateItem, removeItem, apiUrl, updateApiUrl, isDbConnected } = useAcademy();
+  const { data, updateSite, addItem, updateItem, removeItem } = useAcademy();
   const [siteForm, setSiteForm] = useState(data.site);
   const [savedSite, setSavedSite] = useState(false);
-  const [customApiUrlInput, setCustomApiUrlInput] = useState(apiUrl);
-  const [savedApiNotice, setSavedApiNotice] = useState(false);
   const [newLink, setNewLink] = useState({ label: '', to: '', description: '' });
   const [newNews, setNewNews] = useState({ title: '', body: '', tag: 'New course', date: new Date().toISOString().slice(0, 10) });
   const [editingNewsId, setEditingNewsId] = useState(null);
   const [editingLinkId, setEditingLinkId] = useState(null);
-
-  function saveApiUrl(e) {
-    e.preventDefault();
-    updateApiUrl(customApiUrlInput);
-    setSavedApiNotice(true);
-    setTimeout(() => setSavedApiNotice(false), 2500);
-  }
 
   function saveSite(e) {
     e.preventDefault();
@@ -53,57 +44,6 @@ export default function AdminSite() {
         </div>
       </div>
 
-      {/* Database Connection & API Server Endpoint Panel */}
-      <form className="admin-panel mb-6" onSubmit={saveApiUrl}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2>🌐 Database &amp; API Server Endpoint Settings</h2>
-          <span
-            style={{
-              padding: '6px 14px',
-              borderRadius: '9999px',
-              fontSize: '12px',
-              fontWeight: 700,
-              background: isDbConnected ? '#dcfce7' : '#fef3c7',
-              color: isDbConnected ? '#15803d' : '#b45309',
-              border: `1px solid ${isDbConnected ? '#bbf7d0' : '#fde68a'}`,
-            }}
-          >
-            {isDbConnected ? '⚡ MySQL Database Connected' : '⚠️ Offline / Browser Storage'}
-          </span>
-        </div>
-
-        <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '1.25rem' }}>
-          When testing locally on <code>http://localhost:5173</code>, use <code>http://localhost:5000/api</code>.<br />
-          To connect <strong>GitHub Pages (HTTPS)</strong> live to your computer's XAMPP MySQL, run <code>npx localtunnel --port 5000</code> in your terminal and paste the generated <code>https://...loca.lt/api</code> URL below!
-        </p>
-
-        <div className="field">
-          <label>API Endpoint Server URL</label>
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <input
-              type="text"
-              value={customApiUrlInput}
-              onChange={(e) => setCustomApiUrlInput(e.target.value)}
-              placeholder="http://localhost:5000/api or https://xxxx.loca.lt/api"
-              style={{ flex: 1 }}
-            />
-            <Button type="submit" variant="primary">
-              {savedApiNotice ? 'Updated ✓' : 'Connect API URL'}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setCustomApiUrlInput('http://localhost:5000/api');
-                updateApiUrl('http://localhost:5000/api');
-              }}
-            >
-              Reset Default
-            </Button>
-          </div>
-        </div>
-      </form>
-
       <form className="admin-panel mb-6" onSubmit={saveSite}>
         <h2>Hero banner</h2>
         <div className="field">
@@ -128,7 +68,7 @@ export default function AdminSite() {
       <div className="admin-panel">
         <h2>Quick links</h2>
         <div className="admin-entity-list" style={{ marginBottom: 16 }}>
-          {data.quickLinks.map((q) => (
+          {(data.quickLinks || []).map((q) => (
             <QuickLinkRow
               key={q.id}
               link={q}
@@ -159,7 +99,7 @@ export default function AdminSite() {
       <div className="admin-panel">
         <h2>News &amp; announcements</h2>
         <div className="admin-entity-list" style={{ marginBottom: 16 }}>
-          {data.news.map((n) => (
+          {(data.news || []).map((n) => (
             <NewsRow
               key={n.id}
               item={n}

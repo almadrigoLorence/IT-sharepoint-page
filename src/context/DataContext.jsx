@@ -25,53 +25,66 @@ export function DataProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
   const [saving, setSaving] = useState(false);
   const [isDbConnected, setIsDbConnected] = useState(false);
-  const [apiUrl, setApiUrlState] = useState(() => localStorage.getItem('ita_api_url') || DEFAULT_API_URL);
+  const [activeApiUrl, setActiveApiUrl] = useState(DEFAULT_API_URL);
 
-  const updateApiUrl = useCallback((url) => {
-    const clean = url.trim().replace(/\/+$/, '');
-    const finalUrl = clean ? (clean.endsWith('/api') ? clean : `${clean}/api`) : DEFAULT_API_URL;
-    localStorage.setItem('ita_api_url', finalUrl);
-    setApiUrlState(finalUrl);
-  }, []);
-
-  // Helper function to sync with MySQL API
+  // Helper function to sync with MySQL API automatically
   const syncApi = useCallback(async (endpoint, method, payload) => {
-    try {
-      const res = await fetch(`${apiUrl}${endpoint}`, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: payload ? JSON.stringify(payload) : undefined,
-      });
-      if (res.ok) {
-        setIsDbConnected(true);
-        console.log(`⚡ MySQL API sync success: ${method} ${endpoint}`);
-        return true;
-      }
-    } catch (err) {
-      console.warn(`MySQL API sync failed (${method} ${endpoint}):`, err.message);
-      setIsDbConnected(false);
-    }
-    return false;
-  }, [apiUrl]);
+    const candidateEndpoints = Array.from(new Set([
+      activeApiUrl,
+      'http://localhost:5000/api',
+      'http://127.0.0.1:5000/api',
+      '/api',
+    ]));
 
-  // Attempt to fetch data from Express/MySQL API server on load and whenever apiUrl changes
-  useEffect(() => {
-    async function fetchFromApi() {
+    for (const ep of candidateEndpoints) {
       try {
-        const res = await fetch(`${apiUrl}/data`);
+        const res = await fetch(`${ep}${endpoint}`, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: payload ? JSON.stringify(payload) : undefined,
+        });
         if (res.ok) {
-          const apiData = await res.json();
-          setData(apiData);
           setIsDbConnected(true);
-          console.log('⚡ Connected to SharePoint Academy MySQL API server:', apiUrl);
+          setActiveApiUrl(ep);
+          console.log(`⚡ MySQL API sync success [${ep}]: ${method} ${endpoint}`);
+          return true;
         }
       } catch (err) {
-        console.warn('MySQL API server offline or blocked:', apiUrl, err.message);
-        setIsDbConnected(false);
+        // Try next endpoint candidate
       }
     }
-    fetchFromApi();
-  }, [apiUrl]);
+    setIsDbConnected(false);
+    return false;
+  }, [activeApiUrl]);
+
+  // Attempt to fetch data from Express/MySQL API server on load
+  useEffect(() => {
+    async function autoDiscoverBackend() {
+      const candidateEndpoints = [
+        'http://localhost:5000/api',
+        'http://127.0.0.1:5000/api',
+        '/api',
+      ];
+
+      for (const ep of candidateEndpoints) {
+        try {
+          const res = await fetch(`${ep}/data`);
+          if (res.ok) {
+            const apiData = await res.json();
+            setData(apiData);
+            setIsDbConnected(true);
+            setActiveApiUrl(ep);
+            console.log('⚡ Auto-connected to MySQL API server at:', ep);
+            return;
+          }
+        } catch (err) {
+          // ignore & try next
+        }
+      }
+      setIsDbConnected(false);
+    }
+    autoDiscoverBackend();
+  }, []);
 
   // Save to localStorage as fallback whenever data changes
   useEffect(() => {
@@ -259,8 +272,6 @@ export function DataProvider({ children }) {
     isAdmin,
     saving,
     isDbConnected,
-    apiUrl,
-    updateApiUrl,
     login,
     logout,
     updateSite,
