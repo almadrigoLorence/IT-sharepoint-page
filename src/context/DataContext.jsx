@@ -4,7 +4,7 @@ import { seedData } from '../data/seed.js';
 const STORAGE_KEY = 'ita-sharepoint-data-v2';
 const AUTH_KEY = 'ita-sharepoint-admin-auth';
 const ADMIN_PASSWORD = 'academy-admin';
-const API_URL = 'http://localhost:5000/api';
+const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const DataContext = createContext(null);
 
@@ -25,11 +25,19 @@ export function DataProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
   const [saving, setSaving] = useState(false);
   const [isDbConnected, setIsDbConnected] = useState(false);
+  const [apiUrl, setApiUrlState] = useState(() => localStorage.getItem('ita_api_url') || DEFAULT_API_URL);
+
+  const updateApiUrl = useCallback((url) => {
+    const clean = url.trim().replace(/\/+$/, '');
+    const finalUrl = clean ? (clean.endsWith('/api') ? clean : `${clean}/api`) : DEFAULT_API_URL;
+    localStorage.setItem('ita_api_url', finalUrl);
+    setApiUrlState(finalUrl);
+  }, []);
 
   // Helper function to sync with MySQL API
   const syncApi = useCallback(async (endpoint, method, payload) => {
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
+      const res = await fetch(`${apiUrl}${endpoint}`, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: payload ? JSON.stringify(payload) : undefined,
@@ -44,26 +52,26 @@ export function DataProvider({ children }) {
       setIsDbConnected(false);
     }
     return false;
-  }, []);
+  }, [apiUrl]);
 
-  // Attempt to fetch data from Express/MySQL API server on load and poll health
+  // Attempt to fetch data from Express/MySQL API server on load and whenever apiUrl changes
   useEffect(() => {
     async function fetchFromApi() {
       try {
-        const res = await fetch(`${API_URL}/data`);
+        const res = await fetch(`${apiUrl}/data`);
         if (res.ok) {
           const apiData = await res.json();
           setData(apiData);
           setIsDbConnected(true);
-          console.log('⚡ Connected to SharePoint Academy MySQL API server');
+          console.log('⚡ Connected to SharePoint Academy MySQL API server:', apiUrl);
         }
       } catch (err) {
-        console.warn('MySQL API server offline or blocked. Using local browser state.', err.message);
+        console.warn('MySQL API server offline or blocked:', apiUrl, err.message);
         setIsDbConnected(false);
       }
     }
     fetchFromApi();
-  }, []);
+  }, [apiUrl]);
 
   // Save to localStorage as fallback whenever data changes
   useEffect(() => {
@@ -251,6 +259,8 @@ export function DataProvider({ children }) {
     isAdmin,
     saving,
     isDbConnected,
+    apiUrl,
+    updateApiUrl,
     login,
     logout,
     updateSite,
